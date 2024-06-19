@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geography Treasure Hunt</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch/dist/geosearch.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        h1 {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid #2e7d32;
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            width: 80%;
+            max-width: 800px;
+            margin: 20px auto;
+            z-index: 1000;
+            position: relative;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .clue {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+
+        .clue span {
+            color: #ff5722;
+            animation: colorChange 3s infinite;
+        }
+
+        @keyframes colorChange {
+            0% { color: #ff5722; }
+            25% { color: #ffeb3b; }
+            50% { color: #4caf50; }
+            75% { color: #2196f3; }
+            100% { color: #ff5722; }
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .message {
+            font-size: 1.2em;
+            margin: 20px 0;
+            color: red;
+        }
+
+        .correct {
+            color: green;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        #show-answer {
+            display: none;
+        }
+
+        .back-link {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .back-link a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .clue {
+                font-size: 1.2em;
+            }
+
+            .button {
+                font-size: 0.9em;
+                padding: 8px 15px;
+            }
+        }
+    </style>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-geosearch/dist/geosearch.umd.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body>
+    <h1>Geography Treasure Hunt</h1>
+    <div id="map"></div>
+    <div class="game-container">
+        <div class="clue" id="clue">Clue: <span>This country is known for the Eiffel Tower.</span></div>
+        <div class="message" id="message"></div>
+        <div class="button-container">
+            <button class="button" onclick="nextClue()">Next Clue</button>
+            <button class="button" onclick="nextQuestion()">Next Question</button>
+            <button class="button" id="show-answer" onclick="showAnswer()">Show Answer</button>
+        </div>
+    </div>
+    <div class="back-link">
+        <a href="index.html">Back to Home</a>
+    </div>
+
+    <script>
+        const database = firebase.database();
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let clueStep = 0;
+        let map;
+        let marker;
+        let seenQuestions = JSON.parse(localStorage.getItem('seenQuestions')) || [];
+
+        function fetchQuestions() {
+            database.ref('questions').once('value')
+                .then(snapshot => {
+                    snapshot.forEach(childSnapshot => {
+                        questions.push(childSnapshot.val());
+                    });
+                    if (questions.length > 0) {
+                        loadNextQuestion();
+                    } else {
+                        alert('No questions available.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching questions: ', error);
+                });
+        }
+
+        function loadNextQuestion() {
+            if (seenQuestions.length === questions.length) {
+                seenQuestions = [];
+                localStorage.setItem('seenQuestions', JSON.stringify(seenQuestions));
+            }
+
+            do {
+                currentQuestionIndex = Math.floor(Math.random() * questions.length);
+            } while (seenQuestions.includes(currentQuestionIndex));
+
+            seenQuestions.push(currentQuestionIndex);
+            localStorage.setItem('seenQuestions', JSON.stringify(seenQuestions));
+
+            clueStep = 0;
+            displayClue();
+        }
+
+        function displayClue() {
+            const clueElement = document.getElementById('clue');
+            clueElement.innerHTML = `Clue: <span>${questions[currentQuestionIndex].clues[clueStep]}</span>`;
+            document.getElementById('message').textContent = '';
+
+            if (clueStep === 2) {
+                document.getElementById('show-answer').style.display = 'inline-block';
+            } else {
+                document.getElementById('show-answer').style.display = 'none';
+            }
+        }
+
+        async function checkLocation(event) {
+            const { lat, lng } = event.latlng;
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await response.json();
+            const country = data.address.country;
+            
+            const messageElement = document.getElementById('message');
+            const answer = questions[currentQuestionIndex].answer;
+            const { coords } = questions[currentQuestionIndex];
+            const distance = map.distance([lat, lng], coords);
+
+            if (distance < 500000) {  // within 500 km tolerance
+                messageElement.textContent = `You found the treasure in ${answer}!`;
+                messageElement.classList.add('correct');
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                marker = L.marker(coords).addTo(map)
+                    .bindPopup(`Treasure found in ${answer}!`).openPopup();
+            } else {
+                messageElement.textContent = `You are in ${country}. Keep looking!`;
+                messageElement.classList.remove('correct');
+            }
+        }
+
+        function nextClue() {
+            clueStep = (clueStep + 1) % 3;
+            displayClue();
+            if (marker) {
+                map.removeLayer(marker);
+            }
+        }
+
+        function nextQuestion() {
+            loadNextQuestion();
+            if (marker) {
+                map.removeLayer(marker);
+            }
+        }
+
+        function showAnswer() {
+            const { coords, answer } = questions[currentQuestionIndex];
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker(coords).addTo(map)
+                .bindPopup(`Treasure found in ${answer}!`).openPopup();
+            map.setView(coords, 5);
+        }
+
+        function initializeMap() {
+            map = L.map('map', {
+                maxBounds: [
+                    [-90, -180],
+                    [90, 180]
+                ],
+                maxBoundsViscosity: 1.0
+            }).setView([20, 0], 2);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                maxZoom: 18,
+                minZoom: 2
+            }).addTo(map);
+
+            const provider = new window.GeoSearch.OpenStreetMapProvider();
+
+            const searchControl = new window.GeoSearch.GeoSearchControl({
+                provider: provider,
+                style: 'bar',
+                showMarker: true,
+                showPopup: true,
+                marker: {
+                    icon: new L.Icon.Default(),
+                    draggable: false,
+                },
+                popupFormat: ({ query, result }) => result.label,
+                resultFormat: ({ result }) => result.label,
+                maxMarkers: 1,
+                retainZoomLevel: false,
+                animateZoom: true,
+                autoClose: true,
+                searchLabel: 'Enter address',
+                keepResult: true
+            });
+
+            map.addControl(searchControl);
+
+            map.on('click', checkLocation);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeMap();
+            fetchQuestions();
+        });
+    </script>
+</body>
+</html>

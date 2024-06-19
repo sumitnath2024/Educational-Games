@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Geography Treasure Hunt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: url('image.jpg') no-repeat center center fixed;
+            background-size: cover;
+            background-color: rgba(255, 255, 255, 0.5);
+            background-blend-mode: lighten;
+        }
+
+        h1 {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-container {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            width: 80%;
+            max-width: 800px;
+            margin-bottom: 20px;
+        }
+
+        .form-container input,
+        .form-container textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .form-container button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .form-container button:hover {
+            background-color: #45a049;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            display: inline-block;
+        }
+
+        .file-label:hover {
+            background-color: #45a049;
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.18.5/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <h1>Admin - Geography Treasure Hunt</h1>
+    <div class="form-container">
+        <input type="text" id="answer" placeholder="Answer (Country, City, etc.)">
+        <input type="text" id="clue1" placeholder="First Clue">
+        <input type="text" id="clue2" placeholder="Second Clue">
+        <input type="text" id="clue3" placeholder="Third Clue">
+        <input type="text" id="latitude" placeholder="Latitude">
+        <input type="text" id="longitude" placeholder="Longitude">
+        <button onclick="addQuestion()">Add Question</button>
+    </div>
+
+    <div class="form-container">
+        <button onclick="downloadDatabase()">Download Database</button>
+        <input type="file" id="upload" class="file-input" onchange="uploadDatabase(event)">
+        <label for="upload" class="file-label">Upload Database</label>
+    </div>
+
+    <script>
+        const database = firebase.database();
+
+        function addQuestion() {
+            const answer = document.getElementById('answer').value;
+            const clue1 = document.getElementById('clue1').value;
+            const clue2 = document.getElementById('clue2').value;
+            const clue3 = document.getElementById('clue3').value;
+            const latitude = parseFloat(document.getElementById('latitude').value);
+            const longitude = parseFloat(document.getElementById('longitude').value);
+
+            if (answer && clue1 && clue2 && clue3 && !isNaN(latitude) && !isNaN(longitude)) {
+                const newQuestion = {
+                    answer,
+                    clues: [clue1, clue2, clue3],
+                    coords: [latitude, longitude]
+                };
+                database.ref('questions').push(newQuestion).then(() => {
+                    alert('Question added successfully!');
+                    document.getElementById('answer').value = '';
+                    document.getElementById('clue1').value = '';
+                    document.getElementById('clue2').value = '';
+                    document.getElementById('clue3').value = '';
+                    document.getElementById('latitude').value = '';
+                    document.getElementById('longitude').value = '';
+                }).catch(error => {
+                    alert('Error adding question: ' + error.message);
+                });
+            } else {
+                alert('Please fill in all fields correctly.');
+            }
+        }
+
+        function downloadDatabase() {
+            database.ref('questions').once('value')
+                .then(snapshot => {
+                    const data = snapshot.val();
+                    const questions = Object.keys(data).map(key => ({
+                        answer: data[key].answer,
+                        clue1: data[key].clues[0],
+                        clue2: data[key].clues[1],
+                        clue3: data[key].clues[2],
+                        latitude: data[key].coords[0],
+                        longitude: data[key].coords[1]
+                    }));
+                    const worksheet = XLSX.utils.json_to_sheet(questions);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, 'Questions');
+                    XLSX.writeFile(workbook, 'database.xlsx');
+                })
+                .catch(error => {
+                    alert('Error downloading database: ' + error.message);
+                });
+        }
+
+        function uploadDatabase(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+
+                    const questions = {};
+                    json.forEach((row, index) => {
+                        questions[`question${index + 1}`] = {
+                            answer: row.answer,
+                            clues: [row.clue1, row.clue2, row.clue3],
+                            coords: [parseFloat(row.latitude), parseFloat(row.longitude)]
+                        };
+                    });
+
+                    database.ref('questions').set(questions)
+                        .then(() => {
+                            alert('Database uploaded successfully!');
+                        })
+                        .catch(error => {
+                            alert('Error uploading database: ' + error.message);
+                        });
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+    </script>
+</body>
+</html>
