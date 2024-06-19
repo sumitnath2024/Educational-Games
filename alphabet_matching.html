@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alphabet and Number Matching Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: url('image.jpg') no-repeat center center fixed;
+            background-size: cover;
+            background-color: rgba(255, 255, 255, 0.5);
+            background-blend-mode: lighten;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .menu button {
+            width: 120px;
+            height: 120px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu button span {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .game-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            grid-gap: 10px;
+            justify-content: center;
+            max-width: 600px;
+            margin: 20px 0;
+            width: 100%;
+        }
+
+        .card {
+            width: 100%;
+            height: 100px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s, background-color 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card.match {
+            background-color: #32cd32;
+        }
+
+        .level {
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+
+        .back-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #ff6347;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .back-button:hover {
+            background-color: #ff4500;
+        }
+
+        audio {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Educational Games</h1>
+    </header>
+
+    <main>
+        <div class="menu">
+            <button onclick="startGame('englishAlphabetsLower')">
+                <span>🔠</span>
+                English Alphabets (Lower Nursery)
+            </button>
+            <button onclick="startGame('englishNumbersLower')">
+                <span>1️⃣</span>
+                English Numbers (Lower Nursery)
+            </button>
+            <button onclick="startGame('bengaliAlphabetsLower')">
+                <span>🅱️</span>
+                Bengali Alphabets (Lower Nursery)
+            </button>
+            <button onclick="startGame('bengaliNumbersLower')">
+                <span>2️⃣</span>
+                Bengali Numbers (Lower Nursery)
+            </button>
+            <button onclick="startGame('hindiAlphabetsLower')">
+                <span>🇭</span>
+                Hindi Alphabets (Lower Nursery)
+            </button>
+            <button onclick="startGame('hindiNumbersLower')">
+                <span>3️⃣</span>
+                Hindi Numbers (Lower Nursery)
+            </button>
+            <button onclick="startGame('englishAlphabetsUpper')">
+                <span>🔠</span>
+                English Alphabets (Upper Nursery)
+            </button>
+            <button onclick="startGame('englishNumbersUpper')">
+                <span>1️⃣</span>
+                English Numbers (Upper Nursery)
+            </button>
+            <button onclick="startGame('bengaliAlphabetsUpper')">
+                <span>🅱️</span>
+                Bengali Alphabets (Upper Nursery)
+            </button>
+            <button onclick="startGame('bengaliNumbersUpper')">
+                <span>2️⃣</span>
+                Bengali Numbers (Upper Nursery)
+            </button>
+            <button onclick="startGame('hindiAlphabetsUpper')">
+                <span>🇭</span>
+                Hindi Alphabets (Upper Nursery)
+            </button>
+            <button onclick="startGame('hindiNumbersUpper')">
+                <span>3️⃣</span>
+                Hindi Numbers (Upper Nursery)
+            </button>
+            <button onclick="startGame('combinedLower')">
+                <span>🔤</span>
+                Combined Lower Nursery
+            </button>
+            <button onclick="startGame('combinedUpper')">
+                <span>🔢</span>
+                Combined Upper Nursery
+            </button>
+        </div>
+        <div class="game-container" id="game">
+            <h1 id="game-title">Matching Game</h1>
+            <div class="grid" id="game-grid"></div>
+            <div class="level" id="level">Level 1</div>
+            <button class="back-button" onclick="goBack()">Back to Menu</button>
+        </div>
+    </main>
+
+    <!-- Background Music -->
+    <audio id="background-music" autoplay loop>
+        <source src="background-music.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        const games = {
+            englishAlphabetsLower: 'ABCDEFGH'.split(''),
+            englishNumbersLower: Array.from({ length: 9 }, (_, i) => (i + 1).toString()), // 1 digit
+            bengaliAlphabetsLower: 'অআইঈউঊঋএঐওঔ'.split(''), // Swarabarna for Lower Nursery
+            bengaliNumbersLower: ['১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'], // Bengali numerals 1-9
+            hindiAlphabetsLower: 'अआइईउऊऋएऐओऔ'.split(''), // Swarabarna for Lower Nursery
+            hindiNumbersLower: ['१', '२', '३', '४', '५', '६', '७', '८', '९'], // Hindi numerals 1-9
+
+            englishAlphabetsUpper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+            englishNumbersUpper: Array.from({ length: 100 }, (_, i) => (i + 1).toString()), // 1 and 2 digits
+            bengaliAlphabetsUpper: 'কখগঘঙচছজঝঞটঠডঢণতথদধনপফবভমযরলশষসহ'.split(''), // Banjonbarna for Upper Nursery
+            bengaliNumbersUpper: Array.from({ length: 100 }, (_, i) => (i + 1).toLocaleString('bn-IN')), // Bengali numerals 1-100
+            hindiAlphabetsUpper: 'कखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसह'.split(''), // Banjonbarna for Upper Nursery
+            hindiNumbersUpper: Array.from({ length: 100 }, (_, i) => (i + 1).toLocaleString('hi-IN')), // Hindi numerals 1-100
+
+            combinedLower: [
+                ...'ABCDEFGH'.split(''),
+                ...Array.from({ length: 9 }, (_, i) => (i + 1).toString()),
+                ...'অআইঈউঊঋএঐওঔ'.split(''),
+                ...['১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'], // Bengali numerals 1-9
+                ...'अआइईउऊऋएऐओऔ'.split(''),
+                ...['१', '२', '३', '४', '५', '६', '७', '८', '९'] // Hindi numerals 1-9
+            ],
+            combinedUpper: [
+                ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+                ...Array.from({ length: 100 }, (_, i) => (i + 1).toString()),
+                ...'কখগঘঙচছজঝঞটঠডঢণতথদধনপফবভমযরলশষসহ'.split(''),
+                ...Array.from({ length: 100 }, (_, i) => (i + 1).toLocaleString('bn-IN')),
+                ...'कखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसह'.split(''),
+                ...Array.from({ length: 100 }, (_, i) => (i + 1).toLocaleString('hi-IN'))
+            ]
+        };
+
+        const emojiList = [
+            '🍎', '⚽', '🐱', '🐶', '🍌', '🍇', '🍉', '🍓', '🍒', '🍍', '🥥', '🥑', '🍋', '🥭', '🍊', '🍈', '🍑', '🍐', '🍏', '🥝', '🍅', '🍆', '🌽', '🥕', '🥒', '🍄'
+        ];
+
+        let currentGame = '';
+        let firstCard = null;
+        let secondCard = null;
+        let lockBoard = false;
+        let matchedPairs = 0;
+        let level = 1;
+
+        function shuffle(array) {
+            array.sort(() => 0.5 - Math.random());
+        }
+
+        function getRandomSubset(level) {
+            const items = games[currentGame];
+            shuffle(items);
+            const numPairs = Math.min(level + 3, items.length); // Increase difficulty gradually
+            return items.slice(0, numPairs);
+        }
+
+        function startGame(game) {
+            currentGame = game;
+            document.querySelector('.menu').style.display = 'none';
+            document.querySelector('.game-container').style.display = 'flex';
+            resetGame();
+        }
+
+        function createBoard() {
+            const grid = document.getElementById('game-grid');
+            grid.innerHTML = '';
+            const subset = getRandomSubset(level);
+            const cardsArray = [];
+            subset.forEach((item, index) => {
+                const emoji = emojiList[index % emojiList.length];
+                cardsArray.push({ name: item, img: emoji }, { name: item, img: emoji });
+            });
+            shuffle(cardsArray);
+
+            cardsArray.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.name = card.name;
+                cardElement.dataset.img = card.img;
+                cardElement.innerHTML = `<span>${card.name}</span>`;
+                cardElement.addEventListener('click', flipCard);
+                grid.appendChild(cardElement);
+                cardElement.style.backgroundColor = getRandomColor();
+            });
+
+            const gameTitle = document.getElementById('game-title');
+            gameTitle.innerText = `Matching Game: ${currentGame.replace(/([A-Z])/g, ' $1').trim()}`;
+            gameTitle.style.color = getRandomColor();
+            document.getElementById('level').innerText = `Level ${level}`;
+            document.getElementById('level').style.color = getRandomColor();
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            this.classList.add('flipped');
+            this.innerHTML = `<span>${this.dataset.img}</span>`;
+
+            if (!firstCard) {
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            lockBoard = true;
+
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            const isMatch = firstCard.dataset.img === secondCard.dataset.img;
+
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            firstCard.classList.add('match');
+            secondCard.classList.add('match');
+            resetBoard();
+            matchedPairs++;
+            if (matchedPairs === getRandomSubset(level).length) {
+                setTimeout(() => {
+                    alert(`Congratulations! You've completed Level ${level}!`);
+                    level++;
+                    resetGame();
+                }, 500);
+            }
+        }
+
+        function unflipCards() {
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                firstCard.innerHTML = `<span>${firstCard.dataset.name}</span>`;
+                secondCard.innerHTML = `<span>${secondCard.dataset.name}</span>`;
+                resetBoard();
+            }, 1500);
+        }
+
+        function resetBoard() {
+            [firstCard, secondCard] = [null, null];
+            lockBoard = false;
+        }
+
+        function resetGame() {
+            matchedPairs = 0;
+            createBoard();
+        }
+
+        function goBack() {
+            document.querySelector('.game-container').style.display = 'none';
+            document.querySelector('.menu').style.display = 'flex';
+            level = 1;
+            matchedPairs = 0;
+        }
+
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        document.querySelectorAll('.menu button').forEach(button => {
+            button.style.backgroundColor = getRandomColor();
+        });
+    </script>
+</body>
+
+</html>
