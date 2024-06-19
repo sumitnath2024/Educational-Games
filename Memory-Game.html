@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: url('image.jpg') no-repeat center center fixed;
+            background-size: cover;
+            background-color: rgba(255, 255, 255, 0.5);
+            background-blend-mode: lighten;
+        }
+
+        h1 {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-board {
+            display: grid;
+            grid-gap: 10px;
+            padding: 20px;
+        }
+
+        .card {
+            width: 80px;
+            height: 80px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .card.flipped {
+            background-color: #4CAF50;
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .hidden {
+            visibility: hidden;
+        }
+
+        .message {
+            font-size: 1.5em;
+            margin: 20px 0;
+            color: green;
+        }
+
+        .button-container {
+            margin-top: 20px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin: 0 10px;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .level {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Memory Game</h1>
+    <div class="level" id="level">Level: 1</div>
+    <div class="game-board" id="game-board"></div>
+    <div class="message" id="message"></div>
+    <div class="button-container">
+        <button class="button" onclick="nextLevel()">Next Level</button>
+        <button class="button" onclick="restartGame()">Restart</button>
+    </div>
+    <script>
+        const emojiArray = [
+            '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃',
+            '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜',
+            '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟',
+            '😕', '🙁', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡',
+            '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔',
+            '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮',
+            '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '😷', '🤒', '🤕', '🤢',
+            '🤮', '🤧', '😇', '🥳', '🤠', '🤡', '🤥', '🤫', '🤭', '🧐', '🤓', '😈',
+            '👿', '👹', '👺', '💀', '👻', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹',
+            '😻', '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊', '💥', '💫', '💦',
+            '💨', '🐵', '🐒', '🦍', '🦧', '🐶', '🐕', '🦮', '🐕‍🦺', '🐩', '🐺', '🦊'
+        ];
+
+        let gameGrid = [];
+        let firstCard = null;
+        let secondCard = null;
+        let matchCount = 0;
+        let level = 1;
+
+        const gameBoard = document.getElementById('game-board');
+        const message = document.getElementById('message');
+        const levelDisplay = document.getElementById('level');
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function createBoard() {
+            gameBoard.innerHTML = '';
+            const pairsCount = Math.pow(level + 1, 2) / 2;
+            gameGrid = [];
+
+            // Shuffle emojis and select the required number of pairs
+            shuffle(emojiArray);
+            const selectedEmojis = emojiArray.slice(0, pairsCount);
+            selectedEmojis.forEach(emoji => {
+                gameGrid.push({ name: emoji, img: emoji });
+                gameGrid.push({ name: emoji, img: emoji });
+            });
+
+            gameGrid.sort(() => 0.5 - Math.random());
+
+            gameGrid.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.name = item.name;
+                card.dataset.index = index;
+
+                card.addEventListener('click', flipCard);
+                gameBoard.appendChild(card);
+            });
+
+            const gridSize = Math.sqrt(gameGrid.length);
+            gameBoard.style.gridTemplateColumns = `repeat(${gridSize}, 100px)`;
+        }
+
+        function flipCard() {
+            if (this === firstCard) return;
+            this.classList.add('flipped');
+            this.textContent = gameGrid[this.dataset.index].img;
+
+            if (!firstCard) {
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            if (firstCard.dataset.name === secondCard.dataset.name) {
+                firstCard.removeEventListener('click', flipCard);
+                secondCard.removeEventListener('click', flipCard);
+                firstCard = null;
+                secondCard = null;
+                matchCount++;
+                if (matchCount === gameGrid.length / 2) {
+                    message.textContent = 'Congratulations! You found all pairs!';
+                }
+            } else {
+                setTimeout(() => {
+                    firstCard.classList.remove('flipped');
+                    secondCard.classList.remove('flipped');
+                    firstCard.textContent = '';
+                    secondCard.textContent = '';
+                    firstCard = null;
+                    secondCard = null;
+                }, 1000);
+            }
+        }
+
+        function nextLevel() {
+            if (matchCount === gameGrid.length / 2) {
+                level++;
+                levelDisplay.textContent = `Level: ${level}`;
+                matchCount = 0;
+                createBoard();
+                message.textContent = '';
+            } else {
+                alert('Complete the current level first!');
+            }
+        }
+
+        function restartGame() {
+            level = 1;
+            levelDisplay.textContent = `Level: ${level}`;
+            matchCount = 0;
+            createBoard();
+            message.textContent = '';
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
