@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Manage Experiments</title>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+        .container h1 {
+            margin-bottom: 20px;
+        }
+        .container input, .container textarea, .container button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .container button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .container button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Manage Experiments</h1>
+        <input type="text" id="title" placeholder="Experiment Title">
+        <textarea id="objective" placeholder="Objective"></textarea>
+        <textarea id="materials" placeholder="Materials"></textarea>
+        <textarea id="steps" placeholder="Steps (comma separated)"></textarea>
+        <textarea id="observation" placeholder="Observation"></textarea>
+        <input type="text" id="equation" placeholder="Equation (optional)">
+        <input type="text" id="image" placeholder="Image URL">
+        <button onclick="loadExperiment()">Load Experiment</button>
+        <button onclick="downloadExperiments()">Download Experiments</button>
+        <input type="file" id="upload" accept=".xlsx, .xls" onchange="uploadExperiments(event)">
+    </div>
+
+    <script>
+        function loadExperiment() {
+            const title = document.getElementById('title').value;
+            const objective = document.getElementById('objective').value;
+            const materials = document.getElementById('materials').value;
+            const steps = document.getElementById('steps').value.split(',');
+            const observation = document.getElementById('observation').value;
+            const equation = document.getElementById('equation').value;
+            const image = document.getElementById('image').value;
+
+            if (title && objective && materials && steps && observation && image) {
+                const experiment = {
+                    title,
+                    objective,
+                    materials,
+                    steps,
+                    observation,
+                    equation,
+                    image
+                };
+
+                firebase.database().ref('experiments').push(experiment)
+                    .then(() => alert('Experiment loaded successfully!'))
+                    .catch(error => alert('Error loading experiment: ' + error.message));
+            } else {
+                alert('Please fill in all required fields.');
+            }
+        }
+
+        function downloadExperiments() {
+            firebase.database().ref('experiments').once('value')
+                .then(snapshot => {
+                    const experiments = [];
+                    snapshot.forEach(childSnapshot => {
+                        experiments.push(childSnapshot.val());
+                    });
+
+                    const worksheet = XLSX.utils.json_to_sheet(experiments);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Experiments");
+                    XLSX.writeFile(workbook, 'experiments.xlsx');
+                })
+                .catch(error => alert('Error downloading experiments: ' + error.message));
+        }
+
+        function uploadExperiments(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const experiments = XLSX.utils.sheet_to_json(worksheet);
+
+                    experiments.forEach(experiment => {
+                        firebase.database().ref('experiments').push(experiment)
+                            .catch(error => alert('Error uploading experiment: ' + error.message));
+                    });
+
+                    alert('Experiments uploaded successfully!');
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+    </script>
+</body>
+</html>

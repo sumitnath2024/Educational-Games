@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science Experiment Simulator</title>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: url('image.jpg') no-repeat center center fixed;
+            background-size: cover;
+            background-color: rgba(255, 255, 255, 0.5);
+            background-blend-mode: lighten;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .experiment-container {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 80%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        .experiment h2 {
+            margin-bottom: 10px;
+        }
+
+        .experiment p {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .experiment img {
+            max-width: 100%;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .experiment button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .experiment button:hover {
+            background-color: #45a049;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #333;
+        }
+
+        .back-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #ff6347;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .back-button:hover {
+            background-color: #ff4500;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Science Experiment Simulator</h1>
+    </header>
+
+    <main>
+        <div class="experiment-container">
+            <div class="experiment" id="experiment">
+                <h2>Click "Start Experiment" to begin</h2>
+                <button onclick="startRandomExperiment()">Start Experiment</button>
+                <div class="result" id="result"></div>
+            </div>
+        </div>
+        <button class="back-button" onclick="goBack()">Back to Menu</button>
+    </main>
+
+    <script>
+        let experiments = [];
+
+        async function fetchExperiments() {
+            try {
+                const snapshot = await firebase.database().ref('experiments').once('value');
+                experiments = [];
+                snapshot.forEach(childSnapshot => {
+                    experiments.push(childSnapshot.val());
+                });
+                console.log('Experiments fetched:', experiments); // Debugging line
+            } catch (error) {
+                console.error('Error fetching experiments: ', error);
+            }
+        }
+
+        async function startRandomExperiment() {
+            if (experiments.length === 0) {
+                await fetchExperiments();
+                alert('Fetching experiments, please try again.');
+                return;
+            }
+
+            const experiment = experiments[Math.floor(Math.random() * experiments.length)];
+            const experimentDiv = document.getElementById('experiment');
+            const resultDiv = document.getElementById('result');
+
+            const steps = experiment.steps.split('\n').map(step => `<li>${step}</li>`).join('');
+
+            experimentDiv.innerHTML = `
+                <h2>${experiment.title}</h2>
+                <p><strong>Objective:</strong> ${experiment.objective}</p>
+                <p><strong>Materials:</strong> ${experiment.materials}</p>
+                <img src="${experiment.image}" alt="${experiment.title}">
+                <p><strong>Steps:</strong></p>
+                <ul>${steps}</ul>
+                <p><strong>Observation:</strong> ${experiment.observation}</p>
+                ${experiment.equation ? `<p><strong>Equation:</strong> ${experiment.equation}</p>` : ''}
+                <button onclick="startRandomExperiment()">Start New Experiment</button>
+            `;
+
+            resultDiv.innerHTML = '';
+        }
+
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        window.onload = fetchExperiments;
+    </script>
+</body>
+
+</html>
