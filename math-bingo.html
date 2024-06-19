@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Bingo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: url('image.jpg') no-repeat center center fixed;
+            background-size: cover;
+            background-color: rgba(255, 255, 255, 0.5);
+            background-blend-mode: lighten;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            z-index: 1000;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 100px 20px 20px 20px;
+            box-sizing: border-box;
+        }
+
+        .menu {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .menu button {
+            width: 120px;
+            height: 120px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu button span {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .game-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .bingo-grid {
+            display: grid;
+            grid-gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .bingo-cell {
+            width: 80px;
+            height: 80px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        .bingo-cell.marked {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .back-button,
+        .next-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #ff6347;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .back-button:hover,
+        .next-button:hover {
+            background-color: #ff4500;
+        }
+
+        .callout {
+            font-size: 1.5em;
+            margin: 10px 0;
+        }
+
+        .result {
+            font-size: 1.2em;
+            margin: 10px 0;
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Math Bingo</h1>
+    </header>
+
+    <main>
+        <div class="menu">
+            <button onclick="startGame(1)">
+                <span>1️⃣</span>
+                Class 1
+            </button>
+            <button onclick="startGame(2)">
+                <span>2️⃣</span>
+                Class 2
+            </button>
+            <button onclick="startGame(3)">
+                <span>3️⃣</span>
+                Class 3
+            </button>
+        </div>
+        <div class="game-container" id="game">
+            <h1 id="game-title">Math Bingo</h1>
+            <div class="callout" id="callout">Solve: </div>
+            <div class="result" id="result"></div>
+            <div class="bingo-grid" id="bingo-grid"></div>
+            <div>
+                <button class="back-button" onclick="goBack()">Back to Menu</button>
+                <button class="next-button" onclick="generateNewCard()">Next Card</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentClass = 1;
+        let calloutAnswer = 0;
+
+        function startGame(selectedClass) {
+            currentClass = selectedClass;
+            document.querySelector('.menu').style.display = 'none';
+            document.querySelector('.game-container').style.display = 'flex';
+            generateCallout();
+            generateBingoCard();
+        }
+
+        function generateBingoCard() {
+            const grid = document.getElementById('bingo-grid');
+            grid.innerHTML = '';
+            let gridSize;
+
+            switch (currentClass) {
+                case 1:
+                    gridSize = 3;
+                    break;
+                case 2:
+                    gridSize = 4;
+                    break;
+                case 3:
+                    gridSize = 5;
+                    break;
+                default:
+                    gridSize = 3;
+            }
+
+            grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            const maxNum = 10 * currentClass;
+            const numbers = Array.from({ length: gridSize * gridSize }, () => Math.floor(Math.random() * maxNum));
+            numbers[Math.floor(Math.random() * numbers.length)] = calloutAnswer; // Ensure the answer is present
+            numbers.forEach(number => {
+                const cell = document.createElement('div');
+                cell.classList.add('bingo-cell');
+                cell.textContent = number;
+                cell.addEventListener('click', () => checkAnswer(cell, number));
+                grid.appendChild(cell);
+            });
+        }
+
+        function generateCallout() {
+            let a, b;
+            let operation;
+            switch (currentClass) {
+                case 1:
+                    operation = Math.random() < 0.5 ? '+' : '-';
+                    a = Math.floor(Math.random() * 10) + 1;
+                    b = Math.floor(Math.random() * 10) + 1;
+                    if (operation === '-' && b > a) [a, b] = [b, a]; // Ensure no negative results
+                    calloutAnswer = operation === '+' ? a + b : a - b;
+                    break;
+                case 2:
+                    const operations = ['+', '-', '*', '/'];
+                    operation = operations[Math.floor(Math.random() * operations.length)];
+                    if (operation === '+' || operation === '-') {
+                        a = Math.floor(Math.random() * 90) + 10;
+                        b = Math.floor(Math.random() * 90) + 10;
+                        if (operation === '-' && b > a) [a, b] = [b, a]; // Ensure no negative results
+                        calloutAnswer = operation === '+' ? a + b : a - b;
+                    } else {
+                        a = Math.floor(Math.random() * 9) + 1;
+                        b = Math.floor(Math.random() * 9) + 1;
+                        calloutAnswer = operation === '*' ? a * b : Math.floor(a / b) * b; // Ensure no remainder
+                        if (operation === '/') calloutAnswer = Math.floor(a / b);
+                    }
+                    break;
+                case 3:
+                    const ops = ['+', '-', '*', '/'];
+                    operation = ops[Math.floor(Math.random() * ops.length)];
+                    if (operation === '+') {
+                        a = Math.floor(Math.random() * 900) + 100;
+                        b = Math.floor(Math.random() * 900) + 100;
+                        calloutAnswer = a + b;
+                    } else if (operation === '-') {
+                        a = Math.floor(Math.random() * 900) + 100;
+                        b = Math.floor(Math.random() * 900) + 100;
+                        if (b > a) [a, b] = [b, a]; // Ensure no negative results
+                        calloutAnswer = a - b;
+                    } else if (operation === '*') {
+                        a = Math.floor(Math.random() * 90) + 10;
+                        b = Math.floor(Math.random() * 9) + 1;
+                        calloutAnswer = a * b;
+                    } else {
+                        a = Math.floor(Math.random() * 90) + 10;
+                        b = Math.floor(Math.random() * 9) + 1;
+                        calloutAnswer = Math.floor(a / b);
+                    }
+                    break;
+            }
+            document.getElementById('callout').textContent = `Solve: ${a} ${operation === '*' ? '×' : operation === '/' ? '÷' : operation} ${b}`;
+        }
+
+        function checkAnswer(cell, number) {
+            if (number == calloutAnswer) {
+                cell.classList.add('marked');
+                document.getElementById('result').textContent = "Correct!";
+                document.getElementById('result').style.color = "green";
+                generateCallout();
+            } else {
+                document.getElementById('result').textContent = "Try again!";
+                document.getElementById('result').style.color = "red";
+            }
+        }
+
+        function generateNewCard() {
+            generateCallout();
+            generateBingoCard();
+            document.getElementById('result').textContent = '';
+        }
+
+        function goBack() {
+            document.querySelector('.game-container').style.display = 'none';
+            document.querySelector('.menu').style.display = 'flex';
+        }
+    </script>
+</body>
+
+</html>
