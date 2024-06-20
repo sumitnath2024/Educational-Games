@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Canvas with OCR</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #initialPage, #canvasContainer {
+            display: none;
+        }
+        #initialPage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #initialPage button {
+            margin: 10px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        #initialPage button:hover {
+            background-color: #e0e0e0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        #canvasContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        canvas {
+            border: 2px solid black;
+            background-color: white;
+            width: 100%;
+            height: 100%;
+        }
+        #toolbar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #menuButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        #clearCanvas {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ff6347;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        #clearCanvas:hover {
+            background-color: #ff4500;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        #submitCanvas, #predictCanvas, #showAnswerButton {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        #submitCanvas {
+            margin-bottom: 90px;
+        }
+        #predictCanvas {
+            margin-bottom: 50px;
+        }
+        #submitCanvas:hover, #predictCanvas:hover, #showAnswerButton:hover {
+            background-color: #45a049;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        #output {
+            display: none;
+        }
+        #targetText, #emojiContainer {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff4500;
+            z-index: 10;
+        }
+        #realTimeText {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .toolbar-item {
+            margin-bottom: 5px;
+        }
+        button, input[type="color"], input[type="range"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover, input[type="color"]:hover, input[type="range"]:hover {
+            background-color: #f0f0f0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="initialPage">
+        <button id="noviceButton">Novice</button>
+        <button id="intermediateButton">Intermediate</button>
+        <button id="advanceButton">Advance</button>
+    </div>
+    <div id="canvasContainer">
+        <canvas id="drawingCanvas"></canvas>
+        <button id="clearCanvas">Clear Canvas</button>
+        <button id="submitCanvas">Submit</button>
+        <button id="predictCanvas">Check Prediction</button>
+        <button id="showAnswerButton" style="display: none;">Show Answer</button>
+        <div id="menuButton">☰</div>
+        <div id="toolbar">
+            <label class="toolbar-item">Brush Color:
+                <input type="color" id="brushColor">
+            </label>
+            <label class="toolbar-item">Brush Width:
+                <input type="range" id="brushWidth" min="1" max="20" value="5">
+            </label>
+            <label class="toolbar-item">Eraser Width:
+                <input type="range" id="eraserWidth" min="1" max="20" value="5">
+            </label>
+            <button id="eraserButton" class="toolbar-item">Eraser</button>
+        </div>
+        <div id="targetText"></div>
+        <div id="emojiContainer"></div>
+        <div id="realTimeText">Prediction: </div>
+    </div>
+    <div id="output"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
+    <script>
+        const initialPage = document.getElementById('initialPage');
+        const noviceButton = document.getElementById('noviceButton');
+        const intermediateButton = document.getElementById('intermediateButton');
+        const advanceButton = document.getElementById('advanceButton');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const clearCanvasButton = document.getElementById('clearCanvas');
+        const submitCanvasButton = document.getElementById('submitCanvas');
+        const predictCanvasButton = document.getElementById('predictCanvas');
+        const showAnswerButton = document.getElementById('showAnswerButton');
+        const brushColorInput = document.getElementById('brushColor');
+        const brushWidthInput = document.getElementById('brushWidth');
+        const eraserWidthInput = document.getElementById('eraserWidth');
+        const eraserButton = document.getElementById('eraserButton');
+        const menuButton = document.getElementById('menuButton');
+        const toolbar = document.getElementById('toolbar');
+        const targetTextDiv = document.getElementById('targetText');
+        const emojiContainer = document.getElementById('emojiContainer');
+        const realTimeTextDiv = document.getElementById('realTimeText');
+        let drawing = false;
+        const selectedLanguage = 'eng'; // Default language is English
+        let targetText = '';
+        let emojiWord = '';
+        let isErasing = false;
+
+        // Show the canvas when novice button is clicked
+        noviceButton.addEventListener('click', () => {
+            initialPage.style.display = 'none';
+            canvasContainer.style.display = 'block';
+            toolbar.style.display = 'none';
+            targetTextDiv.style.display = 'none';
+            emojiContainer.style.display = 'none';
+            realTimeTextDiv.style.display = 'none';
+            showAnswerButton.style.display = 'none';
+        });
+
+        // Show the canvas and set target text when intermediate button is clicked
+        intermediateButton.addEventListener('click', () => {
+            initialPage.style.display = 'none';
+            canvasContainer.style.display = 'block';
+            toolbar.style.display = 'none';
+            realTimeTextDiv.style.display = 'block';
+            emojiContainer.style.display = 'none';
+            showAnswerButton.style.display = 'none';
+            loadNewTarget();
+        });
+
+        // Show the canvas and set emoji when advance button is clicked
+        advanceButton.addEventListener('click', () => {
+            initialPage.style.display = 'none';
+            canvasContainer.style.display = 'block';
+            toolbar.style.display = 'none';
+            targetTextDiv.style.display = 'none';
+            realTimeTextDiv.style.display = 'block';
+            showAnswerButton.style.display = 'block';
+            loadNewEmoji();
+        });
+
+        // Toggle toolbar visibility
+        menuButton.addEventListener('click', () => {
+            if (toolbar.style.display === 'none' || toolbar.style.display === '') {
+                toolbar.style.display = 'flex';
+            } else {
+                toolbar.style.display = 'none';
+            }
+        });
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchstart', startDrawingTouch);
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchmove', drawTouch);
+        clearCanvasButton.addEventListener('click', clearCanvas);
+        submitCanvasButton.addEventListener('click', convertToText);
+        predictCanvasButton.addEventListener('click', realTimePredict);
+        showAnswerButton.addEventListener('click', showAnswer);
+        eraserButton.addEventListener('click', toggleEraser);
+
+        function startDrawing(e) {
+            drawing = true;
+            draw(e);
+        }
+
+        function startDrawingTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent("mousedown", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+
+        function stopDrawing() {
+            drawing = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+
+            ctx.lineWidth = isErasing ? eraserWidthInput.value : brushWidthInput.value;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = isErasing ? 'white' : brushColorInput.value || 'black';
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            ctx.lineTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
+        }
+
+        function drawTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent("mousemove", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+
+        function convertToText() {
+            const imageData = canvas.toDataURL();
+            Tesseract.recognize(
+                imageData,
+                selectedLanguage
+            ).then(({ data: { text } }) => {
+                const recognizedText = text.trim();
+                handleRecognizedText(recognizedText);
+            }).catch(err => {
+                console.error(err);
+                alert('Error recognizing text.');
+            });
+        }
+
+        function handleRecognizedText(text) {
+            if (targetText) {
+                if (text.toLowerCase() === targetText.toLowerCase()) {
+                    showCongratsMessage(text);
+                } else {
+                    alert(`No match. The computer understood: ${text}`);
+                    readAloud(`You have written ${text}. Please try again.`);
+                }
+            } else if (emojiWord) {
+                if (text.toLowerCase() === emojiWord.toLowerCase()) {
+                    showCongratsMessage(emojiWord);
+                } else {
+                    alert(`No match. The computer understood: ${text}`);
+                    readAloud(`You have written ${text}. Please try again.`);
+                }
+            } else if (/^\d+$/.test(text)) {
+                readAloud(`You have written the number ${text}`);
+            } else {
+                checkOnlineDictionary(text);
+            }
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            realTimeTextDiv.textContent = 'Prediction: ';
+        }
+
+        async function checkOnlineDictionary(word) {
+            const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.title === "No Definitions Found") {
+                    alert(`No match found in the dictionary. The computer understood: ${word}`);
+                } else {
+                    const meaning = data[0].meanings[0].definitions[0].definition;
+                    showCongratsMessage(word, meaning);
+                }
+            } catch (error) {
+                console.error('Error fetching dictionary data:', error);
+                alert('Error fetching dictionary data.');
+            }
+        }
+
+        function showCongratsMessage(text, meaning = '') {
+            const msg = new SpeechSynthesisUtterance(`Congratulations! You have correctly written ${text}.`);
+            window.speechSynthesis.speak(msg);
+
+            const applause = new Audio('https://www.myinstants.com/media/sounds/applause-1.mp3');
+            applause.play();
+
+            alert(`Congratulations! You have correctly written "${text}".`);
+            if (targetText) {
+                loadNewTarget();
+            } else if (emojiWord) {
+                loadNewEmoji();
+            }
+        }
+
+        function readAloud(text) {
+            const msg = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(msg);
+        }
+
+        function getRandomTarget() {
+            const targets = [
+                'apple', 'banana', 'cat', 'dog', 'elephant',
+                'frog', 'grape', 'house', 'ice', 'jungle',
+                'kite', 'lemon', 'monkey', 'nose', 'orange',
+                'piano', 'queen', 'rabbit', 'snake', 'tiger',
+                'umbrella', 'violin', 'whale', 'xylophone', 'zebra',
+                '123', '456', '789', '1011', '2022',
+                '5', '16', '28', '39', '48'
+            ];
+            return targets[Math.floor(Math.random() * targets.length)];
+        }
+
+        function getRandomEmoji() {
+            const emojis = [
+                { emoji: '🍎', word: 'apple' },
+                { emoji: '🍌', word: 'banana' },
+                { emoji: '🐱', word: 'cat' },
+                { emoji: '🐶', word: 'dog' },
+                { emoji: '🐘', word: 'elephant' },
+                { emoji: '🐸', word: 'frog' },
+                { emoji: '🍇', word: 'grape' },
+                { emoji: '🏠', word: 'house' },
+                { emoji: '🍦', word: 'ice' },
+                { emoji: '🌲', word: 'jungle' },
+                { emoji: '🪁', word: 'kite' },
+                { emoji: '🍋', word: 'lemon' },
+                { emoji: '🐒', word: 'monkey' },
+                { emoji: '👃', word: 'nose' },
+                { emoji: '🍊', word: 'orange' },
+                { emoji: '🎹', word: 'piano' },
+                { emoji: '👸', word: 'queen' },
+                { emoji: '🐰', word: 'rabbit' },
+                { emoji: '🐍', word: 'snake' },
+                { emoji: '🐯', word: 'tiger' },
+                { emoji: '☂️', word: 'umbrella' },
+                { emoji: '🎻', word: 'violin' },
+                { emoji: '🐋', word: 'whale' },
+                { emoji: '🎶', word: 'xylophone' },
+                { emoji: '🦓', word: 'zebra' }
+            ];
+            return emojis[Math.floor(Math.random() * emojis.length)];
+        }
+
+        function loadNewTarget() {
+            clearCanvas();
+            targetText = getRandomTarget();
+            targetTextDiv.textContent = `Draw: ${targetText}`;
+            targetTextDiv.style.display = 'block';
+        }
+
+        function loadNewEmoji() {
+            clearCanvas();
+            const emojiObj = getRandomEmoji();
+            emojiWord = emojiObj.word;
+            emojiContainer.textContent = emojiObj.emoji;
+            emojiContainer.style.display = 'block';
+        }
+
+        function realTimePredict() {
+            const imageData = canvas.toDataURL();
+            Tesseract.recognize(
+                imageData,
+                selectedLanguage
+            ).then(({ data: { text } }) => {
+                const recognizedText = text.trim();
+                realTimeTextDiv.textContent = `Prediction: ${recognizedText}`;
+                updatePredictionColor(recognizedText);
+            }).catch(err => {
+                console.error(err);
+            });
+        }
+
+        function updatePredictionColor(predictedText) {
+            const length = predictedText.length;
+            if (length <= 3) {
+                realTimeTextDiv.style.color = 'red';
+            } else if (length <= 6) {
+                realTimeTextDiv.style.color = 'lightgreen';
+            } else {
+                realTimeTextDiv.style.color = 'green';
+            }
+        }
+
+        function toggleEraser() {
+            isErasing = !isErasing;
+            eraserButton.textContent = isErasing ? 'Brush' : 'Eraser';
+        }
+
+        function showAnswer() {
+            alert(`The answer is: ${emojiWord}`);
+        }
+
+        // Initially fill canvas with white background
+        clearCanvas();
+    </script>
+</body>
+</html>
