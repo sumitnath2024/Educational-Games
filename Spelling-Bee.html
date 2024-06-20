@@ -3,207 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drawing Canvas with OCR</title>
+    <title>Spelling Bee Game</title>
     <style>
         body {
+            font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            background: linear-gradient(to right, #ffecd2 0%, #fcb69f 100%);
         }
-        #canvasContainer {
-            position: relative;
-            max-width: 90%;
-        }
-        canvas {
-            border: 2px solid black;
-            background-color: white;
-            width: 100%;
-            height: auto;
-        }
-        #toolbar {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        #output {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold;
+
+        .container {
             text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
         }
-        .toolbar-item {
-            margin-bottom: 5px;
+
+        #game, #scoreboard {
+            display: none;
+            margin-top: 20px;
         }
-        button, input[type="color"], input[type="range"] {
+
+        input, select {
             padding: 10px;
-            border: 1px solid #ccc;
+            font-size: 16px;
+            margin-top: 10px;
+            border: 2px solid #fcb69f;
             border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            font-size: 14px;
+            width: calc(100% - 24px);
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #fcb69f;
+            color: white;
             cursor: pointer;
-            transition: all 0.3s;
         }
-        button:hover, input[type="color"]:hover, input[type="range"]:hover {
-            background-color: #f0f0f0;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+        button:hover {
+            background-color: #ff7e5f;
         }
-        @media (max-width: 768px) {
-            #toolbar {
-                flex-direction: row;
-                bottom: 10px;
-                top: auto;
-                width: calc(100% - 20px);
-                justify-content: space-around;
-                align-items: center;
-            }
+
+        #feedback {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #ff7e5f;
+        }
+
+        #controls {
+            margin-top: 10px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
-    <div id="canvasContainer">
-        <canvas id="drawingCanvas" width="800" height="600"></canvas>
-        <div id="toolbar">
-            <button id="clearCanvas" class="toolbar-item">Clear Canvas</button>
-            <label class="toolbar-item">Brush Color:
-                <input type="color" id="brushColor">
-            </label>
-            <label class="toolbar-item">Brush Width:
-                <input type="range" id="brushWidth" min="1" max="20" value="5">
-            </label>
+    <div class="container">
+        <h1>Spelling Bee Game</h1>
+        <div id="ageSelection">
+            <p>Select Age Group:</p>
+            <button onclick="startGame('child')">Child (6-8)</button>
+            <button onclick="startGame('preteen')">Preteen (9-12)</button>
+            <button onclick="startGame('teen')">Teen (13-18)</button>
+        </div>
+        <div id="game">
+            <p id="round"></p>
+            <button onclick="speakWord()">Read Aloud</button>
+            <input type="text" id="answer" placeholder="Type the spelling">
+            <button onclick="checkAnswer()">Submit</button>
+            <p id="feedback"></p>
+            <div id="controls">
+                <label for="voiceSelect">Voice:</label>
+                <select id="voiceSelect"></select>
+                <label for="rate">Speed:</label>
+                <input type="range" id="rate" min="0.5" max="2" value="1" step="0.1">
+                <label for="pitch">Pitch:</label>
+                <input type="range" id="pitch" min="0" max="2" value="1" step="0.1">
+            </div>
+        </div>
+        <div id="scoreboard">
+            <p id="score"></p>
         </div>
     </div>
-    <div id="output"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
     <script>
-        const canvas = document.getElementById('drawingCanvas');
-        const ctx = canvas.getContext('2d');
-        const clearCanvasButton = document.getElementById('clearCanvas');
-        const brushColorInput = document.getElementById('brushColor');
-        const brushWidthInput = document.getElementById('brushWidth');
-        let drawing = false;
-        let idleTimer;
+        const wordList = {
+            child: {
+                1: [
+                    "cat", "dog", "bat", "rat", "hat", "mat", "fan", "man", "pan", "van",
+                    "pen", "hen", "ten", "red", "bed", "led", "sun", "run", "fun", "bun",
+                    "pot", "cot", "dot", "hot", "lot", "mop", "top", "hop", "pop", "stop",
+                    "pet", "net", "jet", "bet", "wet", "sit", "bit", "hit", "fit", "kit",
+                    "pig", "fig", "wig", "big", "dig", "log", "fog", "jog", "hog", "frog",
+                    "cap", "map", "lap", "nap", "tap", "bug", "mug", "jug", "rug", "hug",
+                    "cow", "how", "now", "bow", "wow", "fox", "box", "ox", "fix", "mix",
+                    "boy", "toy", "joy", "soy", "dry", "cry", "fry", "try", "sky", "spy",
+                    "ear", "far", "car", "jar", "tar", "bat", "rat", "pat", "cat", "mat"
+                ],
+                2: [
+                    "apple", "house", "river", "table", "chair", "water", "happy", "pencil",
+                    "window", "flower", "garden", "school", "friend", "family", "mother",
+                    "father", "sister", "brother", "kitchen", "living", "dining", "bedroom",
+                    "bathroom", "mirror", "picture", "garden", "bottle", "pillow", "blanket",
+                    "towel", "computer", "phone", "music", "television", "banana", "orange",
+                    "grapes", "carrot", "tomato", "potato", "chicken", "pizza", "burger",
+                    "pasta", "bread", "butter", "cheese", "yogurt", "cereal", "chocolate",
+                    "candy", "cookie", "cake", "ice", "cream", "sundae", "donut", "waffle",
+                    "pancake", "jam", "honey", "syrup", "sandwich", "lettuce", "pickle",
+                    "mustard", "ketchup", "salt", "pepper", "spoon", "fork", "knife",
+                    "plate", "cup", "glass", "bowl", "napkin", "brush", "comb", "tissue",
+                    "soap", "shampoo", "toothpaste", "toothbrush", "towel", "brush", "comb"
+                ],
+                3: [
+                    "elephant", "beautiful", "giraffe", "crocodile", "kangaroo", "dinosaur",
+                    "hippopotamus", "alligator", "chimpanzee", "butterfly", "dragonfly",
+                    "grasshopper", "ladybug", "mosquito", "porcupine", "squirrel", "tortoise",
+                    "penguin", "ostrich", "woodpecker", "parrot", "sparrow", "flamingo",
+                    "peacock", "seagull", "whale", "dolphin", "octopus", "shark", "starfish",
+                    "jellyfish", "lobster", "crab", "seal", "otter", "walrus", "beaver",
+                    "mongoose", "meerkat", "armadillo", "possum", "koala", "platypus",
+                    "raccoon", "skunk", "porcupine", "hedgehog", "antelope", "buffalo",
+                    "cheetah", "gazelle", "leopard", "hyena", "zebra", "rhinoceros",
+                    "wildebeest", "badger", "ferret", "marmot", "chipmunk", "groundhog",
+                    "woodchuck", "opossum", "weasel", "otter", "beaver", "mink", "ermine",
+                    "mongoose", "civet", "polecat", "binturong", "jackal", "wolf", "fox",
+                    "coyote", "cougar", "lynx", "bobcat", "mountain", "lion", "caracal",
+                    "serval", "ocelot", "jaguar", "puma", "panther", "tiger", "lion"
+                ]
+            },
+            preteen: {
+                1: [
+                    "plant", "small", "begin", "basic", "light", "right", "wrong", "song", "long", "young",
+                    "chair", "stair", "stare", "care", "share", "scare", "bare", "bear", "fare", "hair",
+                    "write", "white", "kite", "site", "bite", "fight", "might", "sight", "night", "tight",
+                    "clean", "mean", "bean", "lean", "team", "dream", "stream", "cream", "steam", "seam",
+                    "fish", "wish", "dish", "swish", "flash", "crash", "splash", "stash", "trash", "bash",
+                    "lamp", "camp", "damp", "stamp", "champ", "ramp", "cramp", "tramp", "clamp", "scamp",
+                    "desk", "mask", "task", "bask", "flask", "brisk", "risk", "disk", "cask", "ask",
+                    "flame", "blame", "frame", "shame", "game", "same", "name", "came", "tame", "lame",
+                    "jump", "bump", "hump", "lump", "pump", "stump", "grump", "trump", "clump", "slump",
+                    "fast", "last", "past", "cast", "blast", "mast", "vast", "ghast", "haste", "taste",
+                    "bring", "swing", "sing", "king", "ring", "wing", "thing", "sting", "cling", "fling"
+                ],
+                2: [
+                    "doctor", "teacher", "garden", "pencil", "castle", "jungle", "jacket", "wallet", "bucket", "rocket",
+                    "planet", "forest", "market", "target", "socket", "ticket", "packet", "rabbit", "magnet", "blanket",
+                    "bottle", "pillow", "blanket", "towel", "window", "mirror", "puzzle", "guitar", "violin", "piano",
+                    "drums", "trumpet", "flute", "clarinet", "saxophone", "trombone", "banjo", "ukulele", "harp", "accordion",
+                    "banana", "orange", "grapes", "carrot", "tomato", "potato", "onion", "garlic", "lettuce", "broccoli",
+                    "chicken", "pizza", "burger", "pasta", "bread", "butter", "cheese", "yogurt", "cereal", "bacon",
+                    "sandwich", "lettuce", "pickle", "mustard", "ketchup", "mayonnaise", "relish", "barbecue", "honey", "syrup",
+                    "computer", "keyboard", "monitor", "printer", "scanner", "speaker", "microphone", "camera", "tablet", "laptop",
+                    "telephone", "internet", "website", "email", "password", "network", "browser", "modem", "router", "server",
+                    "music", "television", "radio", "movie", "cartoon", "comedy", "drama", "action", "thriller", "horror",
+                    "bookstore", "library", "school", "college", "university", "classroom", "teacher", "student", "principal", "professor"
+                ],
+                3: [
+                    "astronaut", "beautiful", "magician", "engineer", "scientist", "biologist", "geologist", "meteorologist", "archaeologist", "psychologist",
+                    "philosopher", "mathematician", "physicist", "chemist", "astronomer", "architect", "musician", "artist", "writer", "poet",
+                    "constitution", "independent", "psychology", "economics", "philosophy", "sociology", "anthropology", "political", "history", "geography",
+                    "literature", "language", "grammar", "spelling", "vocabulary", "comprehension", "fluency", "communication", "expression", "imagination",
+                    "technology", "innovation", "invention", "discovery", "experiment", "hypothesis", "theory", "analysis", "observation", "research",
+                    "environment", "pollution", "conservation", "sustainability", "recycling", "biodiversity", "ecosystem", "habitat", "climate", "weather",
+                    "transportation", "vehicle", "automobile", "airplane", "helicopter", "submarine", "spaceship", "bicycle", "motorcycle", "scooter",
+                    "architecture", "building", "structure", "construction", "design", "engineering", "blueprint", "foundation", "renovation", "decoration",
+                    "entertainment", "performance", "theater", "concert", "festival", "celebration", "ceremony", "tradition", "custom", "culture",
+                    "adventure", "exploration", "journey", "expedition", "voyage", "trekking", "mountaineering", "safari", "cruise", "pilgrimage"
+                ]
+            },
+            teen: {
+                1: [
+                    "biology", "physics", "chemistry", "algebra", "geometry", "calculus", "history", "geography", "literature", "grammar",
+                    "poetry", "essay", "novel", "drama", "comedy", "tragedy", "journalism", "media", "broadcast", "photography",
+                    "orchestra", "symphony", "band", "choir", "guitar", "piano", "violin", "trumpet", "flute", "clarinet",
+                    "volleyball", "basketball", "soccer", "baseball", "tennis", "badminton", "swimming", "athletics", "gymnastics", "wrestling",
+                    "astronomy", "geology", "meteorology", "oceanography", "ecology", "environment", "conservation", "sustainability", "climate", "weather",
+                    "democracy", "republic", "monarchy", "dictatorship", "communism", "socialism", "capitalism", "imperialism", "colonialism", "nationalism",
+                    "psychology", "sociology", "anthropology", "philosophy", "ethics", "logic", "rhetoric", "aesthetics", "metaphysics", "epistemology",
+                    "economics", "finance", "marketing", "management", "accounting", "business", "entrepreneurship", "startup", "corporation", "partnership",
+                    "engineering", "technology", "innovation", "invention", "robotics", "automation", "programming", "coding", "software", "hardware",
+                    "architecture", "design", "construction", "urban", "planning", "landscape", "interior", "decoration", "furniture", "renovation",
+                    "government", "politics", "election", "legislation", "constitution", "amendment", "bill", "law", "policy", "diplomacy",
+                    "literacy", "numeracy", "science", "arts", "music", "sports", "education", "teaching", "learning", "scholarship"
+                ],
+                2: [
+                    "philosophy", "literature", "economics", "sociology", "anthropology", "psychology", "geography", "history", "biology", "chemistry",
+                    "physics", "mathematics", "calculus", "algebra", "geometry", "trigonometry", "statistics", "probability", "combinatorics", "number",
+                    "theory", "topology", "logic", "set", "theory", "analysis", "differential", "equations", "linear", "algebra", "abstract",
+                    "computer", "science", "programming", "coding", "software", "development", "web", "design", "database", "management",
+                    "networking", "cybersecurity", "data", "science", "machine", "learning", "artificial", "intelligence", "robotics", "automation",
+                    "engineering", "mechanical", "electrical", "civil", "chemical", "biomedical", "aerospace", "environmental", "industrial", "materials",
+                    "management", "business", "administration", "marketing", "finance", "accounting", "economics", "human", "resources", "entrepreneurship",
+                    "startup", "innovation", "leadership", "strategy", "operations", "supply", "chain", "logistics", "project", "management",
+                    "health", "medicine", "nursing", "pharmacy", "dentistry", "veterinary", "science", "public", "health", "nutrition",
+                    "exercise", "science", "kinesiology", "physical", "therapy", "occupational", "therapy", "speech", "language", "pathology",
+                    "social", "work", "counseling", "psychotherapy", "psychiatry", "clinical", "psychology", "educational", "psychology", "forensic",
+                    "psychology", "environmental", "psychology", "developmental", "psychology", "neuropsychology", "cognitive", "psychology", "health", "psychology"
+                ],
+                3: [
+                    "constitution", "independent", "psychology", "environmental", "technology", "innovation", "experiment", "hypothesis", "sustainability", "observation",
+                    "conservation", "biodiversity", "ecosystem", "hypothesis", "discovery", "invention", "experiment", "analysis", "hypothesis", "research",
+                    "mathematics", "physics", "chemistry", "biology", "geology", "astronomy", "meteorology", "oceanography", "ecology", "geography",
+                    "anthropology", "sociology", "philosophy", "psychology", "linguistics", "archaeology", "ethnology", "folklore", "mythology", "religion",
+                    "literature", "history", "art", "music", "theater", "film", "television", "radio", "photography", "journalism",
+                    "communication", "media", "public", "relations", "advertising", "marketing", "branding", "sales", "business", "administration",
+                    "management", "finance", "accounting", "economics", "entrepreneurship", "innovation", "startup", "corporation", "partnership", "sole",
+                    "proprietorship", "nonprofit", "organization", "government", "politics", "public", "administration", "policy", "law", "criminal",
+                    "justice", "diplomacy", "international", "relations", "education", "teaching", "learning", "curriculum", "instruction", "assessment",
+                    "special", "education", "counseling", "psychotherapy", "clinical", "psychology", "neuropsychology", "cognitive", "psychology", "developmental",
+                    "psychology", "educational", "psychology", "forensic", "psychology", "social", "psychology", "industrial", "organizational", "psychology",
+                    "sports", "psychology", "health", "psychology", "environmental", "psychology", "occupational", "therapy", "physical", "therapy",
+                    "exercise", "science", "nutrition", "dietetics", "public", "health", "nursing", "pharmacy", "dentistry", "veterinary",
+                    "science", "medicine", "surgery", "anesthesiology", "radiology", "pathology", "dermatology", "ophthalmology", "psychiatry", "neurology",
+                    "cardiology", "gastroenterology", "endocrinology", "nephrology", "pulmonology", "rheumatology", "hematology", "oncology", "immunology", "infectious",
+                    "diseases", "genetics", "bioinformatics", "biotechnology", "nanotechnology", "robotics", "artificial", "intelligence", "machine", "learning",
+                    "deep", "learning", "neural", "networks", "data", "science", "big", "data", "analytics", "cybersecurity", "information",
+                    "technology", "software", "development", "web", "development", "mobile", "development", "game", "development", "virtual", "reality",
+                    "augmented", "reality", "blockchain", "cryptocurrency", "quantum", "computing", "internet", "of", "things", "smart", "cities",
+                    "autonomous", "vehicles", "drones", "space", "exploration", "climate", "change", "renewable", "energy", "sustainable", "development",
+                    "green", "technology", "urban", "planning", "landscape", "architecture", "interior", "design", "graphic", "design", "industrial",
+                    "design", "fashion", "design", "textile", "design", "product", "design", "user", "experience", "design", "user", "interface",
+                    "design", "game", "design", "animation", "visual", "effects", "film", "production", "video", "editing", "sound", "design",
+                    "music", "production", "photography", "journalism", "broadcasting", "media", "studies", "public", "relations", "advertising", "marketing",
+                    "business", "administration", "finance", "accounting", "entrepreneurship", "innovation", "leadership", "strategy", "operations", "supply",
+                    "chain", "logistics", "project", "management", "human", "resources", "organizational", "behavior", "change", "management", "negotiation",
+                    "conflict", "resolution", "ethics", "corporate", "social", "responsibility", "sustainability", "social", "entrepreneurship", "nonprofit", "management"
+                ]
+            }
+        };
 
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('touchstart', startDrawingTouch);
-        canvas.addEventListener('touchend', stopDrawing);
-        canvas.addEventListener('touchmove', drawTouch);
-        clearCanvasButton.addEventListener('click', clearCanvas);
+        let currentRound = 1;
+        let currentWordIndex = 0;
+        let score = 0;
+        let selectedAgeGroup = '';
+        let voices = [];
 
-        function startDrawing(e) {
-            drawing = true;
-            draw(e);
+        function startGame(ageGroup) {
+            selectedAgeGroup = ageGroup;
+            currentRound = 1;
+            currentWordIndex = 0;
+            score = 0;
+
+            document.getElementById("ageSelection").style.display = "none";
+            document.getElementById("game").style.display = "block";
+            document.getElementById("scoreboard").style.display = "block";
+
+            document.getElementById("feedback").innerText = "";
+            document.getElementById("answer").value = "";
+
+            updateRound();
+            showNextWord();
         }
 
-        function startDrawingTouch(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent("mousedown", {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            canvas.dispatchEvent(mouseEvent);
+        function updateRound() {
+            document.getElementById("round").innerText = `Round ${currentRound}`;
+            document.getElementById("score").innerText = `Score: ${score}`;
         }
 
-        function stopDrawing() {
-            drawing = false;
-            ctx.beginPath();
-            resetIdleTimer();
-        }
-
-        function draw(e) {
-            if (!drawing) return;
-
-            ctx.lineWidth = brushWidthInput.value;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = brushColorInput.value || 'black';
-
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-
-            ctx.lineTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
-            resetIdleTimer();
-        }
-
-        function drawTouch(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent("mousemove", {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            canvas.dispatchEvent(mouseEvent);
-        }
-
-        function resetIdleTimer() {
-            if (idleTimer) clearTimeout(idleTimer);
-            idleTimer = setTimeout(convertToText, 3000);
-        }
-
-        function convertToText() {
-            const imageData = canvas.toDataURL();
-            Tesseract.recognize(
-                imageData,
-                'eng',
-                {
-                    logger: m => console.log(m)
-                }
-            ).then(({ data: { text } }) => {
-                const upperCaseText = text.toUpperCase().trim();
-                alert(`Converted drawing to text: ${upperCaseText}`);
-                checkOnlineDictionary(upperCaseText);
-            }).catch(err => {
-                console.error(err);
-                alert('Error recognizing text.');
-            });
-        }
-
-        function clearCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        async function checkOnlineDictionary(word) {
-            const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data.title === "No Definitions Found") {
-                    alert('No match found in the dictionary.');
+        function showNextWord() {
+            if (currentWordIndex < wordList[selectedAgeGroup][currentRound].length) {
+                speakWord();
+            } else {
+                currentRound++;
+                if (currentRound <= 3) {
+                    currentWordIndex = 0;
+                    updateRound();
+                    showNextWord();
                 } else {
-                    const meaning = data[0].meanings[0].definitions[0].definition;
-                    showCongratsMessage(word, meaning);
+                    endGame();
                 }
-            } catch (error) {
-                console.error('Error fetching dictionary data:', error);
-                alert('Error fetching dictionary data.');
             }
         }
 
-        function showCongratsMessage(word, meaning) {
-            alert(`Congratulations! The word "${word}" matches. Meaning: ${meaning}`);
+        function checkAnswer() {
+            const answer = document.getElementById("answer").value.trim().toLowerCase();
+            const correctWord = wordList[selectedAgeGroup][currentRound][currentWordIndex].toLowerCase();
+
+            if (answer === correctWord) {
+                document.getElementById("feedback").innerText = "Correct!";
+                score++;
+            } else {
+                document.getElementById("feedback").innerText = `Incorrect. The correct spelling is: ${correctWord}`;
+            }
+
+            document.getElementById("score").innerText = `Score: ${score}`;
+            currentWordIndex++;
+            document.getElementById("answer").value = "";
+
+            setTimeout(() => {
+                document.getElementById("feedback").innerText = "";
+                showNextWord();
+            }, 1000);
         }
 
-        // Initially fill canvas with white background
-        clearCanvas();
+        function endGame() {
+            document.getElementById("game").style.display = "none";
+            document.getElementById("feedback").innerText = `Game Over! Your total score is: ${score}`;
+            document.getElementById("ageSelection").style.display = "block";
+        }
+
+        function speakWord() {
+            const word = wordList[selectedAgeGroup][currentRound][currentWordIndex];
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = 'en-IN'; // Set the language to Indian English
+            utterance.rate = parseFloat(document.getElementById("rate").value); // Get the rate value
+            utterance.pitch = parseFloat(document.getElementById("pitch").value); // Get the pitch value
+            const selectedVoice = document.getElementById("voiceSelect").selectedOptions[0].getAttribute('data-name');
+            utterance.voice = voices.find(voice => voice.name === selectedVoice);
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function populateVoiceList() {
+            voices = window.speechSynthesis.getVoices();
+            const voiceSelect = document.getElementById("voiceSelect");
+            voiceSelect.innerHTML = '';
+            voices.forEach(voice => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.setAttribute('data-lang', voice.lang);
+                option.setAttribute('data-name', voice.name);
+                voiceSelect.appendChild(option);
+            });
+        }
+
+        populateVoiceList();
+        if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
     </script>
 </body>
 </html>
