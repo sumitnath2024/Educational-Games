@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Financial Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            width: 600px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            resize: none;
+            outline: none;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            outline: none;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #results {
+            margin-top: 30px;
+            text-align: left;
+        }
+        #summary {
+            margin-top: 10px;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .transaction {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #e7ffe7;
+            border-left: 5px solid #4CAF50;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SMS Financial Analyzer</h1>
+        <textarea id="smsInput" placeholder="Paste your SMS content here"></textarea>
+        <button id="analyzeButton">Analyze</button>
+        <div id="results">
+            <h2>Monthly Summary</h2>
+            <div id="summary"></div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('analyzeButton').addEventListener('click', analyzeSMS);
+
+        function analyzeSMS() {
+            const smsContent = document.getElementById('smsInput').value;
+            const transactions = extractTransactions(smsContent);
+            const monthlySummary = summarizeTransactions(transactions);
+            displaySummary(monthlySummary);
+        }
+
+        function extractTransactions(smsContent) {
+            const transactions = [];
+            const smsLines = smsContent.split('\n');
+
+            smsLines.forEach(line => {
+                const transaction = parseTransaction(line);
+                if (transaction) {
+                    transactions.push(transaction);
+                }
+            });
+
+            return transactions;
+        }
+
+        function parseTransaction(line) {
+            const dateRegex = /(\d{2}\/\d{2}\/\d{4})/;
+            const amountRegex = /Rs\.? (\d+\.?\d*)/;
+            const dateMatch = line.match(dateRegex);
+            const amountMatch = line.match(amountRegex);
+
+            if (dateMatch && amountMatch) {
+                return {
+                    date: new Date(dateMatch[1]),
+                    amount: parseFloat(amountMatch[1])
+                };
+            }
+            return null;
+        }
+
+        function summarizeTransactions(transactions) {
+            const summary = {};
+
+            transactions.forEach(transaction => {
+                const month = transaction.date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                if (!summary[month]) {
+                    summary[month] = 0;
+                }
+                summary[month] += transaction.amount;
+            });
+
+            return summary;
+        }
+
+        function displaySummary(summary) {
+            const summaryDiv = document.getElementById('summary');
+            summaryDiv.innerHTML = '';
+
+            for (const month in summary) {
+                const p = document.createElement('p');
+                p.className = 'transaction';
+                p.textContent = `${month}: Rs. ${summary[month].toFixed(2)}`;
+                summaryDiv.appendChild(p);
+            }
+        }
+    </script>
+</body>
+</html>
