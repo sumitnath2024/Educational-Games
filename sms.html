@@ -28,17 +28,6 @@
             margin-bottom: 20px;
             color: #4CAF50;
         }
-        textarea {
-            width: 100%;
-            height: 150px;
-            margin-bottom: 20px;
-            padding: 15px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            font-size: 16px;
-            resize: none;
-            outline: none;
-        }
         button {
             padding: 10px 20px;
             border: none;
@@ -78,77 +67,91 @@
 <body>
     <div class="container">
         <h1>SMS Financial Analyzer</h1>
-        <textarea id="smsInput" placeholder="Paste your SMS content here"></textarea>
-        <button id="analyzeButton">Analyze</button>
+        <button id="analyzeButton">Analyze SMS</button>
         <div id="results">
             <h2>Monthly Summary</h2>
             <div id="summary"></div>
         </div>
     </div>
+    <script src="cordova.js"></script>
     <script>
-        document.getElementById('analyzeButton').addEventListener('click', analyzeSMS);
+        document.addEventListener('deviceready', function() {
+            document.getElementById('analyzeButton').addEventListener('click', analyzeSMS);
 
-        function analyzeSMS() {
-            const smsContent = document.getElementById('smsInput').value;
-            const transactions = extractTransactions(smsContent);
-            const monthlySummary = summarizeTransactions(transactions);
-            displaySummary(monthlySummary);
-        }
-
-        function extractTransactions(smsContent) {
-            const transactions = [];
-            const smsLines = smsContent.split('\n');
-
-            smsLines.forEach(line => {
-                const transaction = parseTransaction(line);
-                if (transaction) {
-                    transactions.push(transaction);
-                }
-            });
-
-            return transactions;
-        }
-
-        function parseTransaction(line) {
-            const dateRegex = /(\d{2}\/\d{2}\/\d{4})/;
-            const amountRegex = /Rs\.? (\d+\.?\d*)/;
-            const dateMatch = line.match(dateRegex);
-            const amountMatch = line.match(amountRegex);
-
-            if (dateMatch && amountMatch) {
-                return {
-                    date: new Date(dateMatch[1]),
-                    amount: parseFloat(amountMatch[1])
+            function analyzeSMS() {
+                const filter = {
+                    box: 'inbox', // 'inbox' (default), 'sent', 'draft'
+                    indexFrom: 0,
+                    maxCount: 100
                 };
-            }
-            return null;
-        }
 
-        function summarizeTransactions(transactions) {
-            const summary = {};
-
-            transactions.forEach(transaction => {
-                const month = transaction.date.toLocaleString('default', { month: 'long', year: 'numeric' });
-                if (!summary[month]) {
-                    summary[month] = 0;
+                if (SMS) {
+                    SMS.listSMS(filter, function(data) {
+                        const transactions = extractTransactions(data);
+                        const monthlySummary = summarizeTransactions(transactions);
+                        displaySummary(monthlySummary);
+                    }, function(error) {
+                        console.error('Error fetching SMS:', error);
+                    });
+                } else {
+                    alert('SMS plugin not ready');
                 }
-                summary[month] += transaction.amount;
-            });
-
-            return summary;
-        }
-
-        function displaySummary(summary) {
-            const summaryDiv = document.getElementById('summary');
-            summaryDiv.innerHTML = '';
-
-            for (const month in summary) {
-                const p = document.createElement('p');
-                p.className = 'transaction';
-                p.textContent = `${month}: Rs. ${summary[month].toFixed(2)}`;
-                summaryDiv.appendChild(p);
             }
-        }
+
+            function extractTransactions(smsList) {
+                const transactions = [];
+
+                smsList.forEach(sms => {
+                    const transaction = parseTransaction(sms.body);
+                    if (transaction) {
+                        transactions.push(transaction);
+                    }
+                });
+
+                return transactions;
+            }
+
+            function parseTransaction(message) {
+                const dateRegex = /(\d{2}\/\d{2}\/\d{4})/;
+                const amountRegex = /Rs\.? (\d+\.?\d*)/;
+                const dateMatch = message.match(dateRegex);
+                const amountMatch = message.match(amountRegex);
+
+                if (dateMatch && amountMatch) {
+                    return {
+                        date: new Date(dateMatch[1]),
+                        amount: parseFloat(amountMatch[1])
+                    };
+                }
+                return null;
+            }
+
+            function summarizeTransactions(transactions) {
+                const summary = {};
+
+                transactions.forEach(transaction => {
+                    const month = transaction.date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                    if (!summary[month]) {
+                        summary[month] = 0;
+                    }
+                    summary[month] += transaction.amount;
+                });
+
+                return summary;
+            }
+
+            function displaySummary(summary) {
+                const summaryDiv = document.getElementById('summary');
+                summaryDiv.innerHTML = '';
+
+                for (const month in summary) {
+                    const p = document.createElement('p');
+                    p.className = 'transaction';
+                    p.textContent = `${month}: Rs. ${summary[month].toFixed(2)}`;
+                    summaryDiv.appendChild(p);
+                }
+            }
+        });
     </script>
 </body>
 </html>
