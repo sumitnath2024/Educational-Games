@@ -67,7 +67,8 @@
 <body>
     <div class="container">
         <h1>SMS Financial Analyzer</h1>
-        <button id="analyzeButton">Analyze SMS</button>
+        <button id="requestPermissionButton">Request Permission</button>
+        <button id="analyzeButton" style="display:none;">Analyze SMS</button>
         <div id="results">
             <h2>Monthly Summary</h2>
             <div id="summary"></div>
@@ -76,7 +77,36 @@
     <script src="cordova.js"></script>
     <script>
         document.addEventListener('deviceready', function() {
-            document.getElementById('analyzeButton').addEventListener('click', analyzeSMS);
+            const requestPermissionButton = document.getElementById('requestPermissionButton');
+            const analyzeButton = document.getElementById('analyzeButton');
+
+            requestPermissionButton.addEventListener('click', requestPermission);
+            analyzeButton.addEventListener('click', analyzeSMS);
+
+            function requestPermission() {
+                if (SMS) {
+                    SMS.hasPermission(function(permission) {
+                        if (permission) {
+                            alert('Permission already granted');
+                            requestPermissionButton.style.display = 'none';
+                            analyzeButton.style.display = 'inline-block';
+                        } else {
+                            SMS.requestPermission(function() {
+                                alert('Permission granted');
+                                requestPermissionButton.style.display = 'none';
+                                analyzeButton.style.display = 'inline-block';
+                            }, function(error) {
+                                alert('Permission denied');
+                                console.error(error);
+                            });
+                        }
+                    }, function(error) {
+                        console.error(error);
+                    });
+                } else {
+                    alert('SMS plugin not ready');
+                }
+            }
 
             function analyzeSMS() {
                 const filter = {
