@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sets Practice App for Students</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            border: 2px solid #000;
+            border-radius: 10px;
+            padding: 20px;
+            width: 400px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        h2 {
+            font-size: 20px;
+            margin-top: 20px;
+        }
+        #result {
+            color: green;
+        }
+        #correct-answer {
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sets Practice App</h1>
+        <button onclick="generateProblem()">Generate Problem</button>
+        
+        <div id="problem-container">
+            <h2>Problem:</h2>
+            <div id="problem"></div>
+            <label for="answer">Your Answer (Roster Form):</label>
+            <input type="text" id="answer" placeholder="{a, b, c, ...}">
+            <button onclick="checkAnswer()">Submit Answer</button>
+        </div>
+        
+        <h2 id="result"></h2>
+        <p id="correct-answer"></p>
+    </div>
+
+    <script>
+        const setsProblems = [
+            {
+                question: "List all elements in the set of even numbers less than 10.",
+                answer: "{0, 2, 4, 6, 8}"
+            },
+            {
+                question: "List all elements in the set of prime numbers less than 20.",
+                answer: "{2, 3, 5, 7, 11, 13, 17, 19}"
+            },
+            {
+                question: "List all elements in the set of letters in the word 'MATHEMATICS'.",
+                answer: "{M, A, T, H, E, I, C, S}"
+            },
+            {
+                question: "List all elements in the set of single-digit odd numbers.",
+                answer: "{1, 3, 5, 7, 9}"
+            },
+            {
+                question: "List all elements in the set of days in a week.",
+                answer: "{Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday}"
+            }
+        ];
+
+        let currentProblem = null;
+
+        function generateProblem() {
+            const randomIndex = Math.floor(Math.random() * setsProblems.length);
+            currentProblem = setsProblems[randomIndex];
+
+            document.getElementById("problem").innerText = currentProblem.question;
+            document.getElementById("answer").value = "";
+            document.getElementById("result").innerText = "";
+            document.getElementById("correct-answer").innerText = "";
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById("answer").value.trim();
+
+            if (userAnswer === currentProblem.answer) {
+                document.getElementById("result").innerText = "Congratulations! That's the correct answer.";
+            } else {
+                document.getElementById("result").innerText = "Oops! That's not correct.";
+                document.getElementById("correct-answer").innerText = `The correct answer is: ${currentProblem.answer}`;
+            }
+        }
+
+        // Initialize with a problem
+        document.addEventListener("DOMContentLoaded", generateProblem);
+    </script>
+</body>
+</html>
