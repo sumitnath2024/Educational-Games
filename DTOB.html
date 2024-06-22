@@ -43,6 +43,12 @@
             font-size: 20px;
             font-weight: bold;
         }
+        .steps {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: normal;
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -61,7 +67,9 @@
                 <input type="text" id="binaryInput" placeholder="Enter binary number">
                 <button onclick="checkDecimalToBinary()">Check Answer</button>
                 <button onclick="showDecimalToBinaryAnswer()">Show Answer</button>
+                <button onclick="skipDecimalToBinary()">Skip Question</button>
                 <div class="result" id="binaryResult"></div>
+                <div class="steps" id="binarySteps"></div>
             </div>
 
             <div id="binaryToDecimal" style="display:none;">
@@ -70,7 +78,9 @@
                 <input type="text" id="decimalInput" placeholder="Enter decimal number">
                 <button onclick="checkBinaryToDecimal()">Check Answer</button>
                 <button onclick="showBinaryToDecimalAnswer()">Show Answer</button>
+                <button onclick="skipBinaryToDecimal()">Skip Question</button>
                 <div class="result" id="decimalResult"></div>
+                <div class="steps" id="decimalSteps"></div>
             </div>
         </div>
     </div>
@@ -94,6 +104,7 @@
             let decimalNumber = Math.floor(Math.random() * 90) + 10; // 2-digit number
             document.getElementById('decimalNumber').innerText = `Decimal Number: ${decimalNumber}`;
             document.getElementById('binaryResult').innerText = '';
+            document.getElementById('binarySteps').innerText = '';
             document.getElementById('binaryInput').value = '';
         }
 
@@ -101,6 +112,7 @@
             let binaryNumber = (Math.floor(Math.random() * 64)).toString(2).padStart(6, '0'); // 6-bit number
             document.getElementById('binaryNumber').innerText = `Binary Number: ${binaryNumber}`;
             document.getElementById('decimalResult').innerText = '';
+            document.getElementById('decimalSteps').innerText = '';
             document.getElementById('decimalInput').value = '';
         }
 
@@ -120,6 +132,18 @@
             let decimalNumber = parseInt(document.getElementById('decimalNumber').innerText.split(': ')[1]);
             let correctBinary = decimalNumber.toString(2);
             document.getElementById('binaryResult').innerText = `Correct Answer: ${correctBinary}`;
+
+            let steps = `Steps to convert ${decimalNumber} to binary:\n`;
+            let n = decimalNumber;
+            while (n > 0) {
+                steps += `${n} / 2 = ${Math.floor(n / 2)} with remainder ${n % 2}\n`;
+                n = Math.floor(n / 2);
+            }
+            document.getElementById('binarySteps').innerText = steps;
+        }
+
+        function skipDecimalToBinary() {
+            generateDecimalNumber();
         }
 
         function checkBinaryToDecimal() {
@@ -138,6 +162,20 @@
             let binaryNumber = document.getElementById('binaryNumber').innerText.split(': ')[1];
             let correctDecimal = parseInt(binaryNumber, 2);
             document.getElementById('decimalResult').innerText = `Correct Answer: ${correctDecimal}`;
+
+            let steps = `Steps to convert ${binaryNumber} to decimal:\n`;
+            let total = 0;
+            for (let i = 0; i < binaryNumber.length; i++) {
+                total += parseInt(binaryNumber[binaryNumber.length - 1 - i]) * Math.pow(2, i);
+                steps += `(${binaryNumber[binaryNumber.length - 1 - i]} * 2^${i}) + `;
+            }
+            steps = steps.slice(0, -3); // Remove the last ' + '
+            steps += ` = ${correctDecimal}`;
+            document.getElementById('decimalSteps').innerText = steps;
+        }
+
+        function skipBinaryToDecimal() {
+            generateBinaryNumber();
         }
 
         // Initialize the game with the default mode
