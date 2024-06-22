@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decimal to Binary Conversion Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f8ff;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            margin-top: 50px;
+        }
+        h1 {
+            font-size: 24px;
+        }
+        input {
+            padding: 10px;
+            margin: 10px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px 0;
+            border: none;
+            background-color: #4caf50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Decimal to Binary & Binary to Decimal Conversion Game</h1>
+        
+        <div>
+            <h2>Decimal to Binary</h2>
+            <input type="number" id="decimalInput" placeholder="Enter a decimal number">
+            <button onclick="convertToBinary()">Convert to Binary</button>
+            <div class="result" id="binaryResult"></div>
+        </div>
+
+        <div>
+            <h2>Binary to Decimal</h2>
+            <input type="text" id="binaryInput" placeholder="Enter a binary number">
+            <button onclick="convertToDecimal()">Convert to Decimal</button>
+            <div class="result" id="decimalResult"></div>
+        </div>
+    </div>
+
+    <script>
+        function convertToBinary() {
+            let decimalNumber = document.getElementById('decimalInput').value;
+            let binaryResult = parseInt(decimalNumber, 10).toString(2);
+            document.getElementById('binaryResult').innerText = `Binary: ${binaryResult}`;
+        }
+
+        function convertToDecimal() {
+            let binaryNumber = document.getElementById('binaryInput').value;
+            let decimalResult = parseInt(binaryNumber, 2);
+            document.getElementById('decimalResult').innerText = `Decimal: ${decimalResult}`;
+        }
+    </script>
+</body>
+</html>
