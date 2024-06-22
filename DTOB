@@ -23,15 +23,13 @@
         h1 {
             font-size: 24px;
         }
-        input {
+        input, select, button {
             padding: 10px;
             margin: 10px 0;
             width: 100%;
             box-sizing: border-box;
         }
         button {
-            padding: 10px 20px;
-            margin: 10px 0;
             border: none;
             background-color: #4caf50;
             color: white;
@@ -50,34 +48,100 @@
 <body>
     <div class="container">
         <h1>Decimal to Binary & Binary to Decimal Conversion Game</h1>
-        
-        <div>
-            <h2>Decimal to Binary</h2>
-            <input type="number" id="decimalInput" placeholder="Enter a decimal number">
-            <button onclick="convertToBinary()">Convert to Binary</button>
-            <div class="result" id="binaryResult"></div>
-        </div>
 
-        <div>
-            <h2>Binary to Decimal</h2>
-            <input type="text" id="binaryInput" placeholder="Enter a binary number">
-            <button onclick="convertToDecimal()">Convert to Decimal</button>
-            <div class="result" id="decimalResult"></div>
+        <select id="modeSelect" onchange="selectMode()">
+            <option value="decimalToBinary">Decimal to Binary</option>
+            <option value="binaryToDecimal">Binary to Decimal</option>
+        </select>
+
+        <div id="gameArea">
+            <div id="decimalToBinary" style="display:none;">
+                <h2>Convert Decimal to Binary</h2>
+                <div id="decimalNumber"></div>
+                <input type="text" id="binaryInput" placeholder="Enter binary number">
+                <button onclick="checkDecimalToBinary()">Check Answer</button>
+                <button onclick="showDecimalToBinaryAnswer()">Show Answer</button>
+                <div class="result" id="binaryResult"></div>
+            </div>
+
+            <div id="binaryToDecimal" style="display:none;">
+                <h2>Convert Binary to Decimal</h2>
+                <div id="binaryNumber"></div>
+                <input type="text" id="decimalInput" placeholder="Enter decimal number">
+                <button onclick="checkBinaryToDecimal()">Check Answer</button>
+                <button onclick="showBinaryToDecimalAnswer()">Show Answer</button>
+                <div class="result" id="decimalResult"></div>
+            </div>
         </div>
     </div>
 
     <script>
-        function convertToBinary() {
-            let decimalNumber = document.getElementById('decimalInput').value;
-            let binaryResult = parseInt(decimalNumber, 10).toString(2);
-            document.getElementById('binaryResult').innerText = `Binary: ${binaryResult}`;
+        function selectMode() {
+            let mode = document.getElementById('modeSelect').value;
+            document.getElementById('decimalToBinary').style.display = 'none';
+            document.getElementById('binaryToDecimal').style.display = 'none';
+
+            if (mode === 'decimalToBinary') {
+                document.getElementById('decimalToBinary').style.display = 'block';
+                generateDecimalNumber();
+            } else if (mode === 'binaryToDecimal') {
+                document.getElementById('binaryToDecimal').style.display = 'block';
+                generateBinaryNumber();
+            }
         }
 
-        function convertToDecimal() {
-            let binaryNumber = document.getElementById('binaryInput').value;
-            let decimalResult = parseInt(binaryNumber, 2);
-            document.getElementById('decimalResult').innerText = `Decimal: ${decimalResult}`;
+        function generateDecimalNumber() {
+            let decimalNumber = Math.floor(Math.random() * 900) + 100;
+            document.getElementById('decimalNumber').innerText = `Decimal Number: ${decimalNumber}`;
+            document.getElementById('binaryResult').innerText = '';
+            document.getElementById('binaryInput').value = '';
         }
+
+        function generateBinaryNumber() {
+            let binaryNumber = (Math.floor(Math.random() * 256)).toString(2).padStart(8, '0');
+            document.getElementById('binaryNumber').innerText = `Binary Number: ${binaryNumber}`;
+            document.getElementById('decimalResult').innerText = '';
+            document.getElementById('decimalInput').value = '';
+        }
+
+        function checkDecimalToBinary() {
+            let decimalNumber = parseInt(document.getElementById('decimalNumber').innerText.split(': ')[1]);
+            let userBinaryInput = document.getElementById('binaryInput').value;
+            let correctBinary = decimalNumber.toString(2);
+
+            if (userBinaryInput === correctBinary) {
+                document.getElementById('binaryResult').innerText = 'Congratulations! Correct Answer.';
+            } else {
+                document.getElementById('binaryResult').innerText = 'Incorrect Answer. Try Again!';
+            }
+        }
+
+        function showDecimalToBinaryAnswer() {
+            let decimalNumber = parseInt(document.getElementById('decimalNumber').innerText.split(': ')[1]);
+            let correctBinary = decimalNumber.toString(2);
+            document.getElementById('binaryResult').innerText = `Correct Answer: ${correctBinary}`;
+        }
+
+        function checkBinaryToDecimal() {
+            let binaryNumber = document.getElementById('binaryNumber').innerText.split(': ')[1];
+            let userDecimalInput = parseInt(document.getElementById('decimalInput').value);
+            let correctDecimal = parseInt(binaryNumber, 2);
+
+            if (userDecimalInput === correctDecimal) {
+                document.getElementById('decimalResult').innerText = 'Congratulations! Correct Answer.';
+            } else {
+                document.getElementById('decimalResult').innerText = 'Incorrect Answer. Try Again!';
+            }
+        }
+
+        function showBinaryToDecimalAnswer() {
+            let binaryNumber = document.getElementById('binaryNumber').innerText.split(': ')[1];
+            let correctDecimal = parseInt(binaryNumber, 2);
+            document.getElementById('decimalResult').innerText = `Correct Answer: ${correctDecimal}`;
+        }
+
+        // Initialize the game with the default mode
+        selectMode();
     </script>
 </body>
 </html>
