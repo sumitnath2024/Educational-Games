@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Physics Conversion App for Kids</title>
+    <title>Physics Conversion Game for Kids</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -50,32 +50,27 @@
             font-size: 18px;
             margin-top: 20px;
         }
+        #result {
+            color: green;
+        }
+        #steps {
+            color: blue;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Physics Conversion App for Kids</h1>
-        <label for="conversionType">Select Conversion Type:</label>
-        <select id="conversionType" onchange="updateUnits()">
-            <option value="Length">Length</option>
-            <option value="Mass">Mass</option>
-            <option value="Time">Time</option>
-            <option value="Temperature">Temperature</option>
-        </select>
+        <h1>Physics Conversion Game for Kids</h1>
+        <label for="question">Conversion Question:</label>
+        <div id="question"></div>
 
-        <label for="fromUnit">From:</label>
-        <select id="fromUnit"></select>
+        <label for="answer">Your Answer:</label>
+        <input type="number" id="answer" placeholder="Enter your answer">
 
-        <label for="toUnit">To:</label>
-        <select id="toUnit"></select>
+        <button onclick="checkAnswer()">Submit Answer</button>
+        <button onclick="skipQuestion()">Skip Question</button>
 
-        <label for="value">Value:</label>
-        <input type="number" id="value" placeholder="Enter value">
-
-        <button onclick="convert()">Convert</button>
-        <button onclick="skip()">Skip</button>
-
-        <h2>Result: <span id="result"></span></h2>
+        <h2 id="result"></h2>
         <p id="steps"></p>
     </div>
 
@@ -87,60 +82,62 @@
             Temperature: ["Celsius", "Fahrenheit", "Kelvin"]
         };
 
+        let correctAnswer = 0;
+
         document.addEventListener("DOMContentLoaded", function () {
-            updateUnits();
+            generateQuestion();
         });
 
-        function updateUnits() {
-            const conversionType = document.getElementById("conversionType").value;
-            const fromUnit = document.getElementById("fromUnit");
-            const toUnit = document.getElementById("toUnit");
+        function generateQuestion() {
+            const conversionTypeKeys = Object.keys(conversionTypes);
+            const randomTypeIndex = Math.floor(Math.random() * conversionTypeKeys.length);
+            const conversionType = conversionTypeKeys[randomTypeIndex];
 
             const units = conversionTypes[conversionType];
+            const randomFromIndex = Math.floor(Math.random() * units.length);
+            const randomToIndex = Math.floor(Math.random() * units.length);
 
-            fromUnit.innerHTML = '';
-            toUnit.innerHTML = '';
+            if (randomFromIndex === randomToIndex) {
+                generateQuestion();
+                return;
+            }
 
-            units.forEach(unit => {
-                let option1 = document.createElement("option");
-                option1.value = unit;
-                option1.text = unit;
-                fromUnit.add(option1);
+            const fromUnit = units[randomFromIndex];
+            const toUnit = units[randomToIndex];
+            const value = (Math.random() * 100).toFixed(2);
 
-                let option2 = document.createElement("option");
-                option2.value = unit;
-                option2.text = unit;
-                toUnit.add(option2);
-            });
-        }
-
-        function convert() {
-            const conversionType = document.getElementById("conversionType").value;
-            const fromUnit = document.getElementById("fromUnit").value;
-            const toUnit = document.getElementById("toUnit").value;
-            const value = parseFloat(document.getElementById("value").value);
-
-            let result = 0;
             let steps = '';
 
             if (conversionType === "Length") {
-                [result, steps] = convertLength(fromUnit, toUnit, value);
+                [correctAnswer, steps] = convertLength(fromUnit, toUnit, value);
             } else if (conversionType === "Mass") {
-                [result, steps] = convertMass(fromUnit, toUnit, value);
+                [correctAnswer, steps] = convertMass(fromUnit, toUnit, value);
             } else if (conversionType === "Time") {
-                [result, steps] = convertTime(fromUnit, toUnit, value);
+                [correctAnswer, steps] = convertTime(fromUnit, toUnit, value);
             } else if (conversionType === "Temperature") {
-                [result, steps] = convertTemperature(fromUnit, toUnit, value);
+                [correctAnswer, steps] = convertTemperature(fromUnit, toUnit, value);
             }
 
-            document.getElementById("result").innerText = `${result.toFixed(2)} ${toUnit}`;
+            correctAnswer = correctAnswer.toFixed(2);
+
+            document.getElementById("question").innerText = `Convert ${value} ${fromUnit} to ${toUnit}`;
             document.getElementById("steps").innerText = steps;
+            document.getElementById("result").innerText = '';
+            document.getElementById("answer").value = '';
         }
 
-        function skip() {
-            document.getElementById("value").value = '';
-            document.getElementById("result").innerText = '';
-            document.getElementById("steps").innerText = '';
+        function checkAnswer() {
+            const userAnswer = parseFloat(document.getElementById("answer").value).toFixed(2);
+
+            if (userAnswer == correctAnswer) {
+                document.getElementById("result").innerText = "Congratulations! That's the correct answer.";
+            } else {
+                document.getElementById("result").innerText = `Oops! The correct answer is ${correctAnswer}`;
+            }
+        }
+
+        function skipQuestion() {
+            generateQuestion();
         }
 
         function convertLength(from, to, value) {
