@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geolocation Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #locationData {
+            text-align: center;
+        }
+        .loading {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Geolocation Example</h1>
+    <button onclick="getLocation()">Get Location</button>
+    <button onclick="setTemporaryLocation()">Set Temporary Location</button>
+    <div id="locationData">
+        <p id="latitude"></p>
+        <p id="longitude"></p>
+        <p id="altitude"></p>
+        <p id="relativeDistance"></p>
+        <p id="status"></p>
+    </div>
+    <div id="loading" class="loading">Loading...</div>
+
+    <script>
+        let tempLocation = null;
+
+        function getLocation() {
+            const status = document.getElementById('status');
+            const loading = document.getElementById('loading');
+            const latitude = document.getElementById('latitude');
+            const longitude = document.getElementById('longitude');
+            const altitude = document.getElementById('altitude');
+            const relativeDistance = document.getElementById('relativeDistance');
+
+            loading.style.display = 'block';
+            status.textContent = '';
+            latitude.textContent = '';
+            longitude.textContent = '';
+            altitude.textContent = '';
+            relativeDistance.textContent = '';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError, {
+                    enableHighAccuracy: true
+                });
+            } else {
+                status.textContent = "Geolocation is not supported by this browser.";
+                loading.style.display = 'none';
+            }
+        }
+
+        function showPosition(position) {
+            const latitude = document.getElementById('latitude');
+            const longitude = document.getElementById('longitude');
+            const altitude = document.getElementById('altitude');
+            const relativeDistance = document.getElementById('relativeDistance');
+            const loading = document.getElementById('loading');
+
+            const currentCoords = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                altitude: position.coords.altitude
+            };
+
+            latitude.textContent = "Latitude: " + currentCoords.latitude;
+            longitude.textContent = "Longitude: " + currentCoords.longitude;
+            altitude.textContent = "Altitude: " + (currentCoords.altitude ? currentCoords.altitude + ' meters' : 'Not available');
+
+            if (tempLocation) {
+                const distance = calculateDistance(tempLocation, currentCoords);
+                relativeDistance.textContent = "Relative Distance: " + distance.toFixed(2) + " meters";
+            }
+
+            loading.style.display = 'none';
+        }
+
+        function setTemporaryLocation() {
+            const status = document.getElementById('status');
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    tempLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        altitude: position.coords.altitude
+                    };
+                    status.textContent = "Temporary location set.";
+                }, showError, {
+                    enableHighAccuracy: true
+                });
+            } else {
+                status.textContent = "Geolocation is not supported by this browser.";
+            }
+        }
+
+        function showError(error) {
+            const status = document.getElementById('status');
+            const loading = document.getElementById('loading');
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    status.textContent = "User denied the request for Geolocation.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    status.textContent = "Location information is unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    status.textContent = "The request to get user location timed out.";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    status.textContent = "An unknown error occurred.";
+                    break;
+            }
+            loading.style.display = 'none';
+        }
+
+        function calculateDistance(coord1, coord2) {
+            const R = 6371e3; // Earth radius in meters
+            const lat1 = toRadians(coord1.latitude);
+            const lat2 = toRadians(coord2.latitude);
+            const deltaLat = toRadians(coord2.latitude - coord1.latitude);
+            const deltaLon = toRadians(coord2.longitude - coord1.longitude);
+
+            const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                      Math.cos(lat1) * Math.cos(lat2) *
+                      Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            const distance = R * c; // in meters
+            return distance;
+        }
+
+        function toRadians(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+    </script>
+</body>
+</html>
