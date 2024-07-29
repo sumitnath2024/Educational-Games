@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geolocation Example</title>
+    <title>Live Geolocation Example</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,8 +23,7 @@
     </style>
 </head>
 <body>
-    <h1>Geolocation Example</h1>
-    <button onclick="getLocation()">Get Location</button>
+    <h1>Live Geolocation Example</h1>
     <button onclick="setTemporaryLocation()">Set Temporary Location</button>
     <div id="locationData">
         <p id="latitude"></p>
@@ -37,29 +36,15 @@
 
     <script>
         let tempLocation = null;
+        let watchId = null;
 
         function getLocation() {
-            const status = document.getElementById('status');
-            const loading = document.getElementById('loading');
-            const latitude = document.getElementById('latitude');
-            const longitude = document.getElementById('longitude');
-            const altitude = document.getElementById('altitude');
-            const relativeDistance = document.getElementById('relativeDistance');
-
-            loading.style.display = 'block';
-            status.textContent = '';
-            latitude.textContent = '';
-            longitude.textContent = '';
-            altitude.textContent = '';
-            relativeDistance.textContent = '';
-
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(showPosition, showError, {
+                watchId = navigator.geolocation.watchPosition(showPosition, showError, {
                     enableHighAccuracy: true
                 });
             } else {
-                status.textContent = "Geolocation is not supported by this browser.";
-                loading.style.display = 'none';
+                document.getElementById('status').textContent = "Geolocation is not supported by this browser.";
             }
         }
 
@@ -68,7 +53,6 @@
             const longitude = document.getElementById('longitude');
             const altitude = document.getElementById('altitude');
             const relativeDistance = document.getElementById('relativeDistance');
-            const loading = document.getElementById('loading');
 
             const currentCoords = {
                 latitude: position.coords.latitude,
@@ -84,8 +68,6 @@
                 const distance = calculateDistance(tempLocation, currentCoords);
                 relativeDistance.textContent = "Relative Distance: " + distance.toFixed(2) + " meters";
             }
-
-            loading.style.display = 'none';
         }
 
         function setTemporaryLocation() {
@@ -109,7 +91,6 @@
 
         function showError(error) {
             const status = document.getElementById('status');
-            const loading = document.getElementById('loading');
             switch (error.code) {
                 case error.PERMISSION_DENIED:
                     status.textContent = "User denied the request for Geolocation.";
@@ -124,7 +105,6 @@
                     status.textContent = "An unknown error occurred.";
                     break;
             }
-            loading.style.display = 'none';
         }
 
         function calculateDistance(coord1, coord2) {
@@ -149,6 +129,8 @@
         function toRadians(degrees) {
             return degrees * (Math.PI / 180);
         }
+
+        getLocation();
     </script>
 </body>
 </html>
